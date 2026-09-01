@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>MetrBudowa AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#1B1A17; --charcoal-2:#232019; --charcoal-3:#2C2823;
+    --concrete:#A9A29A; --chalk:#F5F1E8;
+    --orange:#E85D2F; --blueprint:#4C6FA5; --blueprint-dim:#2F4B7C;
+    --ok:#6BA368; --warn:#D9A441;
+    --line: rgba(245,241,232,0.12);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{margin:0; background:var(--charcoal); color:var(--chalk); font-family:'Barlow',sans-serif; overflow:hidden; position:fixed; inset:0;}
+  .app{height:100%; display:flex; flex-direction:column;}
+
+  header{display:flex; align-items:baseline; justify-content:space-between; padding:13px 18px 9px; border-bottom:1px solid var(--line); flex-shrink:0; z-index:20;}
+  .mark{font-family:'Archivo Black'; font-size:18px; letter-spacing:-0.02em;}
+  .mark span{color:var(--orange);}
+  .tag{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--concrete);}
+
+  .views{flex:1; min-height:0; position:relative;}
+  .view{position:absolute; inset:0; display:none; flex-direction:column; overflow:hidden;}
+  .view.active{display:flex;}
+  .scroll{overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1;}
+  .section-pad{padding:16px 18px 40px;}
+
+  nav.tabs{display:flex; border-top:1px solid var(--line); background:var(--charcoal); flex-shrink:0; z-index:20; padding-bottom:env(safe-area-inset-bottom);}
+  nav.tabs button{flex:1; background:none; border:none; color:var(--concrete); font-family:'Barlow'; font-weight:600; font-size:9px; letter-spacing:.02em; text-transform:uppercase; padding:10px 1px 8px; display:flex; flex-direction:column; align-items:center; gap:4px;}
+  nav.tabs button svg{width:18px; height:18px; stroke:var(--concrete); fill:none; stroke-width:1.8;}
+  nav.tabs button.active{color:var(--orange);} nav.tabs button.active svg{stroke:var(--orange);}
+
+  h1.page-title{font-family:'Archivo Black'; font-size:19px; margin:2px 0 3px;}
+  p.page-sub{color:var(--concrete); font-size:12.5px; margin:0 0 16px; line-height:1.5;}
+
+  .card{background:var(--charcoal-2); border:1px solid var(--line); border-radius:5px; padding:14px 15px; margin-bottom:11px;}
+  .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .card-head .name{font-weight:700; font-size:14px; line-height:1.3;}
+  .card-head .eyebrow{font-family:'Space Mono'; font-size:9.5px; color:var(--blueprint); letter-spacing:.05em; flex-shrink:0; margin-left:8px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .result-line{display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed var(--line); margin-top:12px; padding-top:9px;}
+  .result-line .num{font-family:'Space Mono'; font-size:19px; font-weight:700; color:var(--orange);}
+  .result-line .lbl{font-size:12px; color:var(--concrete);}
+
+  optgroup{background:var(--charcoal); color:var(--concrete); font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-style:normal;}
+  optgroup option{color:var(--chalk); text-transform:none; letter-spacing:0; font-size:14px;}
+  select, input[type=number], input[type=text], textarea{font-family:'Barlow'; background:var(--charcoal-2); color:var(--chalk); border:1px solid var(--line); border-radius:3px; padding:10px 11px; font-size:14px; width:100%; resize:vertical;}
+  label.field-label{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--concrete); display:block; margin:0 0 5px;}
+  .field{margin-bottom:13px;}
+
+  .btn{font-family:'Barlow'; font-weight:700; font-size:13.5px; border:none; border-radius:3px; padding:12px 18px; cursor:pointer;}
+  .btn-primary{background:var(--orange); color:#1B1A17;}
+  .btn-ghost{background:transparent; color:var(--chalk); border:1px solid var(--line);}
+  .btn-blue{background:var(--blueprint-dim); color:var(--chalk);}
+  .btn-danger{background:transparent; color:var(--warn); border:1px solid var(--warn);}
+  .btn:disabled{opacity:.4;}
+  .btn-full{width:100%;}
+
+  /* instrukcja startowa */
+  .how-step{display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--line);}
+  .how-num{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#1B1A17;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .how-art{width:56px;flex-shrink:0;}
+  .how-art svg{width:100%;height:auto;display:block;}
+  .how-txt{flex:1;min-width:0;}
+  .how-t{font-weight:700;font-size:13.5px;line-height:1.35;}
+  .how-d{font-size:12.5px;color:var(--concrete);line-height:1.5;margin-top:4px;}
+
+  /* celownik */
+  .crosshair{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;z-index:4;pointer-events:none;transition:transform .12s;}
+  .crosshair svg{width:100%;height:100%;filter:drop-shadow(0 0 3px rgba(0,0,0,.7));}
+  .crosshair.pulse{transform:scale(1.25);}
+  .crosshair.hidden{display:none;}
+
+  /* pasek krokow */
+  .step-bar{position:absolute;left:0;right:0;top:56px;z-index:5;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;}
+  .sb-item{display:flex;align-items:center;gap:6px;background:rgba(27,26,23,.85);backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:20px;padding:5px 11px 5px 6px;}
+  .sb-dot{width:19px;height:19px;border-radius:50%;background:var(--charcoal-3);color:var(--concrete);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .sb-lbl{font-size:11px;font-weight:600;color:var(--concrete);text-transform:uppercase;letter-spacing:.05em;}
+  .sb-item.active .sb-dot{background:var(--orange);color:#1B1A17;}
+  .sb-item.active .sb-lbl{color:var(--chalk);}
+  .sb-item.done .sb-dot{background:var(--ok);color:#1B1A17;}
+  .sb-line{width:14px;height:1px;background:var(--line);flex-shrink:0;}
+
+  .cam-wrap{position:relative; flex:1; min-height:0; background:#000;}
+  video{width:100%; height:100%; object-fit:cover; display:block;}
+  canvas.overlay{position:absolute; inset:0; width:100%; height:100%; touch-action:none;}
+  .hud-top{position:absolute; top:12px; left:12px; right:12px; z-index:5; display:flex; justify-content:space-between; gap:10px;}
+  .pill{background:rgba(27,26,23,0.85); backdrop-filter:blur(4px); border:1px solid var(--line); border-radius:3px; padding:7px 10px; font-family:'Space Mono'; font-size:11px; line-height:1.5;}
+  .pill b{color:var(--orange);}
+  .pill.step{font-family:'Barlow'; font-weight:600; font-size:12px; max-width:62%;}
+  .hud-bottom{position:absolute; left:0; right:0; bottom:0; z-index:6; background:linear-gradient(0deg, rgba(27,26,23,0.97) 60%, rgba(27,26,23,0)); padding:26px 14px 14px;}
+  .readout{font-family:'Space Mono'; font-size:32px; font-weight:700; line-height:1;}
+  .readout small{font-size:13px; color:var(--concrete); font-weight:400;}
+  .sub-readout{font-family:'Space Mono'; font-size:11.5px; color:var(--concrete); margin-top:4px;}
+  .action-row{display:flex; gap:7px; margin-top:12px;}
+  .action-row .btn{flex:1; padding:11px 4px; font-size:11.5px;}
+  .setup-panel{padding:18px 18px 22px;}
+  .setup-panel h2{font-family:'Archivo Black'; font-size:16px; margin:0 0 4px;}
+  .hint{color:var(--concrete); font-size:12.5px; line-height:1.55; margin:0 0 16px;}
+
+  .chip-row{display:flex; flex-wrap:wrap; margin-bottom:12px;}
+  .saved-chip{display:inline-flex; gap:6px; background:var(--charcoal-2); border:1px solid var(--blueprint-dim); font-family:'Space Mono'; font-size:11.5px; padding:6px 10px; border-radius:20px; margin:0 6px 7px 0; cursor:pointer;}
+  .saved-chip.active{background:var(--blueprint-dim);}
+  .empty-note{color:var(--concrete); font-size:12px; font-style:italic; padding:4px 0 12px;}
+
+  .cat-scroll{display:flex; gap:7px; overflow-x:auto; padding:0 18px 12px; margin:0 -18px 4px;}
+  .cat-scroll::-webkit-scrollbar{display:none;}
+  .cat-btn{flex-shrink:0; background:var(--charcoal-2); border:1px solid var(--line); color:var(--concrete); font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; white-space:nowrap;}
+  .cat-btn.active{background:var(--orange); color:#1B1A17; border-color:var(--orange);}
+
+.demo-badge{display:inline-block;background:var(--warn);color:#1B1A17;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:2px;margin-left:6px;}
+  .demo-note{border:1px dashed var(--warn);border-radius:4px;padding:11px 12px;font-size:12px;color:var(--warn);line-height:1.55;margin-top:14px;}
+  .demo-strip{background:rgba(217,164,65,0.12);border-left:2px solid var(--warn);border-radius:0 3px 3px 0;padding:9px 12px;font-size:12px;color:var(--warn);line-height:1.5;margin-bottom:14px;}
+  .ai-badge{display:inline-flex; gap:5px; background:var(--blueprint-dim); color:var(--chalk); font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:2px;}
+  .ai-out{background:var(--charcoal-2); border:1px solid var(--blueprint-dim); border-radius:5px; padding:14px 15px; margin-top:14px; font-size:13.5px; line-height:1.65;}
+  .ai-out h3{font-family:'Archivo Black'; font-size:13px; margin:14px 0 6px; color:var(--orange);}
+  .ai-out h3:first-child{margin-top:0;}
+  .ai-out ul{margin:6px 0; padding-left:18px;} .ai-out li{margin-bottom:5px;}
+  .ai-out table{width:100%; border-collapse:collapse; font-size:12px; margin:8px 0; table-layout:fixed;}
+  .ai-out th{text-align:left; color:var(--concrete); font-size:10px; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--line); padding:5px 4px;}
+  .ai-out td{padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-word; hyphens:auto;}
+  .ai-out td:last-child, .ai-out th:last-child{text-align:right; white-space:nowrap; width:24%;}
+  .ai-out strong{color:var(--chalk);}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--orange); border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-right:7px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-box{color:var(--concrete); font-size:13px; padding:16px 0;}
+  .err-box{border:1px solid var(--warn); border-radius:4px; padding:12px; font-size:12.5px; color:var(--warn); margin-top:12px; line-height:1.5;}
+
+  .notice{border:1px dashed var(--line); border-radius:5px; padding:12px 13px; font-size:12px; color:var(--concrete); line-height:1.6; margin-top:16px;}
+  .notice b{color:var(--chalk);}
+  .quick-add{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .quick-add button{background:var(--charcoal-3); border:1px solid var(--line); color:var(--concrete); font-size:11.5px; padding:6px 10px; border-radius:3px;}
+
+  /* WYCENA — czytelny układ */
+  .cost-total{background:linear-gradient(160deg,#2C2823,#232019); border:1px solid var(--orange); border-radius:6px; padding:16px; margin-bottom:14px;}
+  .cost-total .ct-lbl{font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--concrete);}
+  .cost-total .ct-val{font-family:'Space Mono'; font-size:27px; font-weight:700; color:var(--orange); line-height:1.15; margin:5px 0 2px; white-space:nowrap;}
+  .cost-total .ct-per{font-family:'Space Mono'; font-size:12.5px; color:var(--chalk);}
+  .cost-total .ct-split{display:flex; gap:10px; margin-top:13px; padding-top:12px; border-top:1px solid var(--line);}
+  .cost-total .ct-split div{flex:1;}
+  .cost-total .ct-split .s-lbl{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--concrete);}
+  .cost-total .ct-split .s-val{font-family:'Space Mono'; font-size:15px; font-weight:700; margin-top:3px; white-space:nowrap;}
+
+  .cost-sec{margin-bottom:14px;}
+  .cost-sec h4{font-family:'Archivo Black'; font-size:12px; color:var(--orange); margin:0 0 8px; letter-spacing:.02em;}
+  .li-row{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .li-row .li-main{flex:1; min-width:0;}
+  .li-row .li-name{font-size:13.5px; font-weight:600; line-height:1.35;}
+  .li-row .li-meta{font-family:'Space Mono'; font-size:11px; color:var(--concrete); margin-top:3px;}
+  .li-row .li-cost{font-family:'Space Mono'; font-size:14px; font-weight:700; white-space:nowrap; text-align:right; flex-shrink:0;}
+  .li-sub{display:flex; justify-content:space-between; align-items:center; padding:11px 0 2px; margin-top:2px;}
+  .li-sub .ls-lbl{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--concrete);}
+  .li-sub .ls-val{font-family:'Space Mono'; font-size:16px; font-weight:700; color:var(--chalk); white-space:nowrap;}
+  .save-list{margin:0; padding-left:17px; font-size:13px; line-height:1.6;}
+  .save-list li{margin-bottom:5px;}
+  .src-note{font-size:11px; color:var(--concrete); font-family:'Space Mono'; margin-top:12px; line-height:1.5;}
+  .drivers{font-size:12.5px; color:var(--chalk); line-height:1.55; margin:10px 0 0; padding:10px 12px; background:rgba(76,111,165,0.12); border-left:2px solid var(--blueprint); border-radius:0 3px 3px 0;}
+
+  /* USTAWIENIA */
+  .lang-switch{display:flex; gap:8px; margin-bottom:6px;}
+  .lang-switch button{flex:1; min-width:0; background:var(--charcoal-2); border:1px solid var(--line); color:var(--concrete); font-weight:700; font-size:12.5px; padding:13px 4px; border-radius:4px; display:flex; flex-direction:column; align-items:center; gap:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .lang-switch button small{font-size:10px; font-weight:400; letter-spacing:.06em; text-transform:uppercase;}
+  .lang-switch button.active{background:var(--orange); color:#1B1A17; border-color:var(--orange);}
+  .set-group{margin-bottom:22px;}
+  .set-group h2{font-family:'Archivo Black'; font-size:13px; margin:0 0 10px; color:var(--orange); letter-spacing:.01em;}
+  .toggle-row{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line);}
+  .toggle-row .tl{font-size:13.5px; font-weight:600;}
+  .toggle-row .td{font-size:11.5px; color:var(--concrete); margin-top:2px; line-height:1.4;}
+  .switch{position:relative; width:44px; height:25px; flex-shrink:0; margin-left:12px;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--charcoal-3); border:1px solid var(--line); border-radius:25px; transition:.2s;}
+  .slider:before{content:""; position:absolute; height:17px; width:17px; left:3px; bottom:3px; background:var(--concrete); border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{background:var(--blueprint-dim); border-color:var(--blueprint);}
+  .switch input:checked + .slider:before{transform:translateX(19px); background:var(--chalk);}
+  .about-line{font-size:12px; color:var(--concrete); line-height:1.6;}
+  ::-webkit-scrollbar{width:0; height:0;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="mark">METR<span>BUDOWA</span></div>
+    <div class="tag" id="hdrTag"></div>
+  </header>
+
+  <div class="views">
+
+    <!-- POMIAR -->
+    <section class="view active" id="view-pomiar">
+      <div id="setupPanel" class="scroll">
+        <div class="setup-panel">
+          <h2 id="t_calibTitle"></h2>
+
+          <div class="how-step">
+            <div class="how-num">1</div>
+            <div class="how-art">
+              <svg viewBox="0 0 60 44"><rect x="2" y="2" width="56" height="40" rx="2" stroke="var(--concrete)" fill="none" stroke-width="1.2"/><rect x="20" y="12" width="14" height="20" rx="1" fill="var(--chalk)" opacity=".9"/><path d="M20 12h14v20H20z" stroke="var(--orange)" fill="none" stroke-width="1.4"/></svg>
+            </div>
+            <div class="how-txt"><div class="how-t" id="t_howStep1"></div><div class="how-d" id="t_howStep1d"></div></div>
+          </div>
+
+          <div class="how-step">
+            <div class="how-num">2</div>
+            <div class="how-art">
+              <svg viewBox="0 0 60 44"><rect x="20" y="12" width="14" height="20" rx="1" stroke="var(--concrete)" fill="none" stroke-width="1.2"/><circle cx="20" cy="12" r="3.2" fill="var(--blueprint)"/><circle cx="34" cy="32" r="3.2" fill="var(--blueprint)"/><path d="M20 12L34 32" stroke="var(--blueprint)" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+            </div>
+            <div class="how-txt"><div class="how-t" id="t_howStep2"></div><div class="how-d" id="t_howStep2d"></div></div>
+          </div>
+
+          <div class="how-step">
+            <div class="how-num">3</div>
+            <div class="how-art">
+              <svg viewBox="0 0 60 44"><path d="M8 8h44v28H8z" fill="var(--orange)" opacity=".14"/><path d="M8 8h44v28H8z" stroke="var(--orange)" fill="none" stroke-width="1.4" stroke-dasharray="3 2"/><circle cx="8" cy="8" r="3.2" fill="var(--orange)"/><circle cx="52" cy="8" r="3.2" fill="var(--orange)"/><circle cx="52" cy="36" r="3.2" fill="var(--orange)"/><circle cx="8" cy="36" r="3.2" fill="var(--orange)"/></svg>
+            </div>
+            <div class="how-txt"><div class="how-t" id="t_howStep3"></div><div class="how-d" id="t_howStep3d"></div></div>
+          </div>
+
+          <div class="field" style="margin-top:20px;">
+            <label class="field-label" id="t_refLabel"></label>
+            <select id="refSelect"></select>
+          </div>
+          <div class="field" id="customRefField" style="display:none;">
+            <label class="field-label" id="t_customRefLabel"></label>
+            <input type="number" id="customRefCm" min="1">
+          </div>
+          <button class="btn btn-primary btn-full" id="startCamBtn" style="padding:15px;font-size:15px;"></button>
+        </div>
+      </div>
+      <div class="cam-wrap" id="camWrap" style="display:none;">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas class="overlay" id="overlay"></canvas>
+        <div class="crosshair" id="crosshair">
+          <svg viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="17" fill="none" stroke="rgba(245,241,232,.55)" stroke-width="1.4"/>
+            <path d="M30 6v13M30 41v13M6 30h13M41 30h13" stroke="rgba(245,241,232,.85)" stroke-width="1.6"/>
+            <circle cx="30" cy="30" r="2.6" fill="var(--orange)"/>
+          </svg>
+        </div>
+
+        <div class="step-bar" id="stepBar">
+          <div class="sb-item" data-i="1"><span class="sb-dot">1</span><span class="sb-lbl" id="t_stepBar1"></span></div>
+          <div class="sb-line"></div>
+          <div class="sb-item" data-i="2"><span class="sb-dot">2</span><span class="sb-lbl" id="t_stepBar2"></span></div>
+          <div class="sb-line"></div>
+          <div class="sb-item" data-i="3"><span class="sb-dot">3</span><span class="sb-lbl" id="t_stepBar3"></span></div>
+        </div>
+
+        <div class="hud-top">
+          <div class="pill step" id="stepPill"></div>
+          <div class="pill" id="calibPill"></div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="readout" id="mainReadout">0.00 <small>m²</small></div>
+          <div class="sub-readout" id="subReadout"></div>
+          <button class="btn btn-primary btn-full" id="addPointBtn" style="margin-top:12px;padding:16px;font-size:15px;"></button>
+          <div class="action-row">
+            <button class="btn btn-ghost" id="undoBtn"></button>
+            <button class="btn btn-ghost" id="openingBtn" disabled></button>
+            <button class="btn btn-primary" id="saveBtn" disabled></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KALKULATOR -->
+    <section class="view" id="view-kalkulator">
+      <div class="scroll"><div class="section-pad">
+        <h1 class="page-title" id="t_calcTitle"></h1>
+        <p class="page-sub" id="t_calcSub"></p>
+        <label class="field-label" id="t_savedLabel"></label>
+        <div class="chip-row" id="chipRow"></div>
+        <div class="empty-note" id="chipEmpty"></div>
+        <div class="field">
+          <label class="field-label" id="t_areaLabel"></label>
+          <input type="number" id="calcArea" step="0.1" min="0">
+        </div>
+        <div class="cat-scroll" id="catScroll"></div>
+        <div id="materialCards"></div>
+      </div></div>
+    </section>
+
+    <!-- AI -->
+    <section class="view" id="view-ai">
+      <div class="scroll"><div class="section-pad">
+        <h1 class="page-title" id="t_aiTitle"></h1>
+        <p class="page-sub" id="t_aiSub"></p>
+        <div class="demo-strip" id="demoStripAi" style="display:none;"></div>
+        <div class="quick-add" id="quickAdd"></div>
+        <div class="field">
+          <label class="field-label" id="t_taskLabel"></label>
+          <textarea id="aiTaskInput" rows="4"></textarea>
+        </div>
+        <div class="row2" style="margin-bottom:13px;">
+          <div><label class="field-label" id="t_aiAreaLabel"></label><input type="number" id="aiArea" step="0.1" min="0"></div>
+          <div><label class="field-label" id="t_stdLabel"></label><select id="aiStandard"></select></div>
+        </div>
+        <button class="btn btn-primary btn-full" id="aiAnalyzeBtn"></button>
+        <div id="aiOutput"></div>
+      </div></div>
+    </section>
+
+    <!-- CENY -->
+    <section class="view" id="view-ceny">
+      <div class="scroll"><div class="section-pad">
+        <h1 class="page-title" id="t_priceTitle"></h1>
+        <p class="page-sub" id="t_priceSub"></p>
+        <div class="demo-strip" id="demoStripCeny" style="display:none;"></div>
+        <div class="field">
+          <label class="field-label" id="t_queryLabel"></label>
+          <input type="text" id="priceQuery">
+        </div>
+        <div class="field">
+          <label class="field-label" id="t_cityLabel"></label>
+          <input type="text" id="priceCity">
+        </div>
+        <button class="btn btn-primary btn-full" id="priceSearchBtn"></button>
+        <div id="priceOutput"></div>
+        <button class="btn btn-blue btn-full" id="locateBtn" style="margin-top:16px;"></button>
+        <div id="storeResults"></div>
+
+        <div style="border-top:1px solid var(--line); margin:26px 0 18px;"></div>
+
+        <h1 class="page-title" id="t_costTitle"></h1>
+        <p class="page-sub" id="t_costSub"></p>
+        <div class="field">
+          <label class="field-label" id="t_costJobLabel"></label>
+          <select id="costJob"></select>
+        </div>
+        <div class="field" id="costCustomField" style="display:none;">
+          <label class="field-label" id="t_costCustomLabel"></label>
+          <textarea id="costCustom" rows="2"></textarea>
+        </div>
+        <div class="row2" style="margin-bottom:6px;">
+          <div><label class="field-label" id="t_costAreaLabel"></label><input type="number" id="costArea" step="0.1" min="0"></div>
+          <div><label class="field-label" id="t_costLabourLabel"></label><select id="costLabour"></select></div>
+        </div>
+        <div class="chip-row" id="costChipRow" style="margin-top:8px;"></div>
+        <div class="field">
+          <label class="field-label" id="t_costRegionLabel"></label>
+          <input type="text" id="costRegion">
+        </div>
+        <button class="btn btn-primary btn-full" id="costBtn"></button>
+        <div id="costOutput"></div>
+
+        <div style="border-top:1px solid var(--line); margin:26px 0 18px;"></div>
+
+        <h1 class="page-title" id="t_proTitle"></h1>
+        <p class="page-sub" id="t_proSub"></p>
+        <div class="field">
+          <label class="field-label" id="t_proTradeLabel"></label>
+          <input type="text" id="proTrade">
+        </div>
+        <div class="field">
+          <label class="field-label" id="t_proAreaLabel"></label>
+          <input type="text" id="proArea">
+        </div>
+        <button class="btn btn-blue btn-full" id="proBtn"></button>
+        <div id="proOutput"></div>
+
+        <div class="notice" id="t_priceNotice"></div>
+      </div></div>
+    </section>
+
+    <!-- USTAWIENIA -->
+    <section class="view" id="view-ustawienia">
+      <div class="scroll"><div class="section-pad">
+        <h1 class="page-title" id="t_setTitle"></h1>
+        <p class="page-sub" id="t_setSub"></p>
+
+        <div class="set-group">
+          <h2 id="t_langGroup"></h2>
+          <div class="lang-switch">
+            <button data-lang="pl" id="langPl">Polski<small>PL</small></button>
+            <button data-lang="en" id="langEn">English<small>EN</small></button>
+            <button data-lang="nl" id="langNl">Nederlands<small>NL</small></button>
+          </div>
+          <p class="about-line" id="t_langNote"></p>
+        </div>
+
+        <div class="set-group">
+          <h2 id="t_marketGroup"></h2>
+          <div class="field">
+            <label class="field-label" id="t_marketLabel"></label>
+            <select id="marketSelect"></select>
+          </div>
+          <p class="about-line" id="t_marketNote"></p>
+          <p class="about-line" id="t_marketStatus" style="color:var(--blueprint);margin-top:8px;"></p>
+        </div>
+
+        <div class="set-group">
+          <h2 id="t_measGroup"></h2>
+          <div class="field">
+            <label class="field-label" id="t_defRefLabel"></label>
+            <select id="defRefSelect"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" id="t_wasteLabel"></label>
+            <input type="number" id="wasteInput" min="0" max="50" step="1" value="10">
+          </div>
+          <div class="toggle-row">
+            <div><div class="tl" id="t_unitsTitle"></div><div class="td" id="t_unitsDesc"></div></div>
+            <label class="switch"><input type="checkbox" id="unitsToggle"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="tl" id="t_roundTitle"></div><div class="td" id="t_roundDesc"></div></div>
+            <label class="switch"><input type="checkbox" id="roundToggle" checked><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h2 id="t_aiGroup"></h2>
+          <div class="toggle-row">
+            <div><div class="tl" id="t_searchTitle"></div><div class="td" id="t_searchDesc"></div></div>
+            <label class="switch"><input type="checkbox" id="searchToggle" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="tl" id="t_gpsTitle"></div><div class="td" id="t_gpsDesc"></div></div>
+            <label class="switch"><input type="checkbox" id="gpsToggle" checked><span class="slider"></span></label>
+          </div>
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label" id="t_defStdLabel"></label>
+            <select id="defStdSelect"></select>
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h2 id="t_dataGroup"></h2>
+          <div class="toggle-row" style="border-bottom:none;">
+            <div><div class="tl" id="t_savedCount"></div><div class="td" id="t_savedCountDesc"></div></div>
+          </div>
+          <button class="btn btn-danger btn-full" id="clearBtn" style="margin-top:8px;"></button>
+        </div>
+
+        <div class="set-group">
+          <h2 id="t_aboutGroup"></h2>
+          <p class="about-line" id="t_aboutText"></p>
+        </div>
+      </div></div>
+    </section>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-view="pomiar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span class="tl-pomiar"></span></button>
+    <button class="tab-btn" data-view="kalkulator">
+      <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg><span class="tl-kalkulator"></span></button>
+    <button class="tab-btn" data-view="ai">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/><path d="M18 16l.9 2.1L21 19l-2.1.9L18 22l-.9-2.1L15 19l2.1-.9z"/></svg><span class="tl-ai"></span></button>
+    <button class="tab-btn" data-view="ceny">
+      <svg viewBox="0 0 24 24"><path d="M3 10l1.5-5h15L21 10M3 10v10h18V10M3 10h18"/><path d="M12 14v3"/></svg><span class="tl-ceny"></span></button>
+    <button class="tab-btn" data-view="ustawienia">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="tl-ustawienia"></span></button>
+  </nav>
+</div>
+
+<script>
+/* ==================== SŁOWNIK / DICTIONARY ==================== */
+const I18N={
+ pl:{
+  hdrTag:'AI · pomiar · materiały',
+  tabs:{pomiar:'Pomiar',kalkulator:'Kalkulator',ai:'Analiza AI',ceny:'Ceny',ustawienia:'Ustawienia'},
+  calibTitle:'Jak to działa',
+  howStep1:'Połóż kartkę A4 na mierzonej ścianie',
+  howStep1d:'Aplikacja musi wiedzieć, ile centymetrów ma jeden piksel. Kartka służy za wzorzec — możesz też użyć drzwi albo rozłożonej miarki.',
+  howStep2:'Zaznacz oba końce kartki',
+  howStep2d:'Celuj krzyżykiem na środku ekranu i naciśnij duży przycisk. Po dwóch punktach aplikacja zna skalę.',
+  howStep3:'Obrysuj ścianę narożnik po narożniku',
+  howStep3d:'Minimum trzy punkty. Wynik w m² pojawia się na bieżąco. Punkt można przeciągnąć palcem, jeśli trafiłeś obok.',
+  howReady:'Gotowe — zaczynamy',
+  stepBar1:'Skala', stepBar2:'Obrys', stepBar3:'Gotowe',
+  addPoint:'Dodaj punkt', pointAdded:'Punkt dodany',
+  dragHint:'Przeciągnij punkt, żeby poprawić',
+  aimHint:'Ustaw krzyżyk i naciśnij przycisk',
+  calibHint:'Aplikacja liczy powierzchnię na podstawie znanego wymiaru w kadrze — działa na każdym telefonie z aparatem, bez LiDAR. Dokładność ok. ±5–10%.',
+  refLabel:'Obiekt referencyjny', customRefLabel:'Długość referencji (cm)', customRefPh:'np. 150',
+  startCam:'Włącz kamerę i rozpocznij',
+  refs:[['21','Kartka A4 — krótszy bok (21 cm)'],['29.7','Kartka A4 — dłuższy bok (29,7 cm)'],['200','Drzwi — wysokość (200 cm)'],['90','Drzwi — szerokość (90 cm)'],['100','Miarka rozłożona na 1 m (100 cm)'],['custom','Inny — podaj długość']],
+  step1:'Zaznacz 1. koniec referencji', step2:'Zaznacz 2. koniec referencji',
+  stepPoly:n=>`Zaznacz narożniki powierzchni (min. 3) — ${n}`,
+  stepOpen:n=>`Zaznacz narożniki otworu — ${n}`,
+  stepReady:'Dodaj narożniki albo zapisz pomiar',
+  scale:'skala', perim:'obwód', points:'punktów', openings:'otwory',
+  undo:'Cofnij', addOpening:'+ Otwór', closeOpening:'Zamknij otwór', save:'Zapisz',
+  savePrompt:'Nazwa pomiaru', surfaceN:n=>'Powierzchnia '+n,
+  camErr:n=>`Brak dostępu do kamery (${n}). Sprawdź uprawnienia kamery w ustawieniach przeglądarki i odśwież stronę.`,
+  retry:'Spróbuj ponownie',
+  calcTitle:'Kalkulator materiałów', calcSub:'Pełny katalog: malowanie, tynki, płytki, regipsy, chemia, podłogi i dachy.',
+  savedLabel:'Zapisane pomiary', chipEmpty:'Brak zapisanych pomiarów — zmierz w zakładce „Pomiar" albo wpisz ręcznie.',
+  areaLabel:'Powierzchnia', areaPh:'np. 24.5',
+  coverage:'Wydajność', layers:'Warstwy / krotność', need:'potrzeba',
+  aiTitle:'Analiza AI', aiSub:'Opisz remont — AI dobierze materiały z aktualnymi cenami, narzędzia i kolejność prac.',
+  taskLabel:'Opis prac', taskPh:'np. Maluję pokój 18 m², ściany po starej farbie olejnej, jest sufit do pomalowania i jedno okno.',
+  aiAreaLabel:'Powierzchnia (m²)', stdLabel:'Standard',
+  stds:['Ekonomiczny','Standardowy','Premium'],
+  analyze:'Przeanalizuj i dobierz materiały', analyzing:'AI analizuje zakres prac…',
+  noTask:'Opisz najpierw zakres prac.',
+  quick:[['Malowanie pokoju','Malowanie pokoju: ściany po starej farbie, są drobne pęknięcia. '],['Płytki w łazience','Kafelkowanie łazienki: ściany i podłoga, płytki 60x30. '],['Ścianka regips','Zabudowa z regipsu: ścianka działowa na profilach, wysokość 2,6 m. '],['Dach','Wymiana pokrycia dachowego: dach dwuspadowy, blachodachówka. '],['Podłoga','Wylewka i panele w salonie. ']],
+  priceTitle:'Ceny i sklepy', priceSub:'AI przeszukuje internet w poszukiwaniu aktualnych cen i analizuje sklepy budowlane w Twojej okolicy.',
+  queryLabel:'Czego szukasz', queryPh:'np. farba lateksowa biała 10 l',
+  cityLabel:'Miasto / okolica (opcjonalnie)', cityPh:'np. Kraków',
+  priceSearch:'Wyszukaj aktualne ceny', priceSearching:'AI przeszukuje internet w poszukiwaniu cen…',
+  noQuery:'Wpisz nazwę materiału.', liveBadge:'wyszukane na żywo',
+  locateBtn:'Przeanalizuj sklepy w mojej okolicy (AI + GPS)', locating:'Ustalam lokalizację…',
+  analyzingStores:'Analizuję sklepy…', storesLoading:'AI sprawdza sklepy budowlane w Twojej okolicy…',
+  storesBadge:'analiza AI · Twoja lokalizacja', refreshArea:'Odśwież analizę okolicy',
+  mapLink:'Zobacz je na mapie', mapLinkSub:'otwiera Mapy Google z trasą',
+  noLoc:'Brak dostępu do lokalizacji — włącz uprawnienia lokalizacji dla przeglądarki, albo wpisz miasto w polu wyżej.',
+  openMaps:'Otwórz Mapy Google →',
+  aiErr:m=>`Nie udało się połączyć z AI (${m}). Spróbuj ponownie za chwilę.`,
+  priceNotice:'<b>Skąd te ceny:</b> AI wyszukuje je na żywo w internecie, więc mogą różnić się od ceny w konkretnym sklepie i nie zastępują sprawdzenia u sprzedawcy. W wersji produkcyjnej warto to podeprzeć integracją z API porównywarki cen lub umowami partnerskimi z sieciami.',
+  gpsOff:'Analiza sklepów przez GPS jest wyłączona w ustawieniach.',
+  demoBadge:'PRZYKŁAD', demoNote:'To jest przykładowy wynik pokazujący, jak działa ta funkcja. W pełnej wersji AI wyszukuje aktualne dane w internecie i dopasowuje je do Twojego remontu i lokalizacji.',
+  demoHint:'Wersja testowa — funkcje AI pokazują przykładowe wyniki.',
+  costTitle:'Wycena robót', costSub:'AI sprawdza aktualne ceny materiałów i szacuje koszt materiałów oraz robocizny.',
+  costJobLabel:'Rodzaj prac', costAreaLabel:'Powierzchnia', costRegionLabel:'Region / miasto (wpływa na stawki)',
+  costRegionPh:'np. Warszawa',
+  costLabourLabel:'Uwzględnij robociznę',
+  costLabourSelf:'Robię sam — tylko materiały', costLabourHire:'Zlecam fachowcowi',
+  costBtn:'Oszacuj koszt', costLoading:'AI sprawdza ceny i liczy koszt…',
+  costNoJob:'Wybierz rodzaj prac i podaj powierzchnię.',
+  costBadge:'wycena AI · ceny z internetu',
+  costUseSaved:'użyj zapisanego pomiaru',
+  jobs:[
+   ['Ściany i sufity',[
+     ['painting','Malowanie ścian i sufitu'],
+     ['skim','Gładzie + malowanie'],
+     ['plaster','Tynki maszynowe (gipsowe/cementowe)'],
+     ['wallpaper','Tapetowanie'],
+     ['decoplaster','Tynk dekoracyjny / mikrocement'],
+     ['concrete','Beton architektoniczny'],
+     ['slats','Lamele i panele ścienne 3D'],
+     ['drywall','Ścianka działowa z regipsu'],
+     ['drylining','Obudowa ścian regipsem'],
+     ['acoustic','Izolacja akustyczna ścian'],
+     ['suspceiling','Sufit podwieszany z regipsu'],
+     ['stretchceiling','Sufit napinany'],
+     ['coving','Sztukateria i listwy przysufitowe']]],
+   ['Podłogi',[
+     ['floor','Wylewka + panele laminowane'],
+     ['vinyl','Winyl LVT / SPC'],
+     ['parquet','Deska warstwowa / parkiet'],
+     ['carpet','Wykładzina dywanowa lub PVC'],
+     ['sanding','Cyklinowanie i lakierowanie'],
+     ['anhydrite','Wylewka anhydrytowa'],
+     ['ufh','Ogrzewanie podłogowe (mata lub rury)'],
+     ['epoxy','Żywica epoksydowa (garaż, piwnica)'],
+     ['skirting','Listwy przypodłogowe']]],
+   ['Łazienka i kuchnia',[
+     ['tiles','Płytki (ściany lub podłoga)'],
+     ['bigtiles','Płytki wielkoformatowe'],
+     ['wetroom','Izolacja pod płytki (folia w płynie)'],
+     ['sanitary','Biały montaż (umywalka, WC, wanna)'],
+     ['plumbing','Podejścia wod-kan'],
+     ['shower','Kabina / odpływ liniowy'],
+     ['grouting','Fugowanie i silikonowanie'],
+     ['splashback','Panel za blatem kuchennym']]],
+   ['Instalacje',[
+     ['electrics','Elektryka: gniazdka i punkty świetlne'],
+     ['fuseboard','Rozdzielnica elektryczna'],
+     ['lighting','Oświetlenie: taśmy LED, oprawy'],
+     ['ventilation','Wentylacja / rekuperacja'],
+     ['radiators','Grzejniki i podejścia']]],
+   ['Poddasze i schody',[
+     ['loft','Zabudowa poddasza (regips + wełna)'],
+     ['loftinsul','Ocieplenie stropodachu'],
+     ['stairs','Wykończenie schodów wewnętrznych']]],
+   ['Na zewnątrz',[
+     ['facade','Ocieplenie elewacji'],
+     ['render','Tynk elewacyjny'],
+     ['roof','Pokrycie dachowe'],
+     ['terrace','Taras / balkon (płytki + izolacja)'],
+     ['paving','Kostka brukowa, podjazd'],
+     ['fence','Ogrodzenie']]],
+   ['Inne',[['custom','Inne — opiszę poniżej']]]
+  ],
+  costCustomLabel:'Opis prac (jeśli „Inne")',
+  proTitle:'Znajdź wykonawcę', proSub:'AI wyszukuje publicznie ogłaszających się fachowców i firmy w Twojej okolicy. Wyniki pochodzą z ogłoszeń — sprawdź je u źródła.',
+  proTradeLabel:'Jakiego fachowca szukasz', proTradePh:'np. glazurnik, ekipa remontowa, dekarz',
+  proAreaLabel:'Miasto / okolica', proBtn:'Szukaj wykonawców', proLoading:'AI przeszukuje ogłoszenia…',
+  proNoTrade:'Wpisz, jakiego fachowca szukasz.', proBadge:'wyniki z ogłoszeń publicznych',
+  proSource:'źródło', proTypeFirm:'firma', proTypeFreelance:'freelancer',
+  proNote:'Aplikacja nie tworzy własnych ocen ani nie przechowuje danych wykonawców — pokazuje to, co jest publicznie ogłoszone, wraz z linkiem do źródła. Opinie i wiarygodność sprawdź bezpośrednio na stronie ogłoszenia oraz poproś o referencje.',
+  proAskLabel:'Kopiuj zapytanie do wykonawcy', proCopied:'Skopiowano',
+  costDisclaimer:'Wycena orientacyjna. Realny koszt zależy od stanu podłoża, dostępu, terminu i konkretnego wykonawcy — traktuj to jako punkt wyjścia do rozmowy, nie ofertę.',
+  ctTotal:'Koszt całkowity', ctPer:m=>'za '+m, ctMaterials:'Materiały', ctLabour:'Robocizna',
+  secMaterials:'Materiały — pozycje', secLabour:'Robocizna — etapy', secSave:'Gdzie można zaoszczędzić',
+  subMaterials:'Suma materiałów', subLabour:'Suma robocizny',
+  qtyOf:'szt.', unitPrice:'cena jedn.', drivers:'Co decyduje o cenie',
+  srcPrefix:'Ceny sprawdzone:',
+  secProducts:'Sprawdzone produkty', secTools:'Narzędzia', secSteps:'Kolejność prac', secWarn:'Na co uważać',
+  subTools:'Suma narzędzi', ctTools:'Narzędzia', toolBuy:'kupno', toolRent:'wypożyczenie', toolHave:'zwykle się ma',
+  ctMatOnly:'Koszt materiałów', analysisBadge:'analiza AI · ceny z internetu',
+  costHintLabour:'Wycena robocizny — w zakładce „Ceny"',
+  setTitle:'Ustawienia', setSub:'Język, domyślne wartości pomiaru i zachowanie AI.',
+  langGroup:'Język', langNote:'Zmiana języka przełącza interfejs, katalog materiałów oraz język odpowiedzi AI.',
+  marketGroup:'Rynek i ceny', marketLabel:'Kraj, dla którego liczyć ceny',
+  marketAuto:'Automatycznie z GPS', marketNote:'Ceny, sklepy i waluta dobierane są do wybranego kraju. Przy ustawieniu automatycznym AI rozpozna kraj z Twoich współrzędnych — możesz to nadpisać, jeśli wyceniasz zlecenie za granicą.',
+  marketDetected:c=>'Wykryto: '+c, marketNoGps:'Nie wykryto jeszcze lokalizacji — użyj przycisku w zakładce „Ceny".',
+  marketAutoLabel:'Automatycznie (wg GPS)',
+  measGroup:'Pomiar i kalkulacja',
+  defRefLabel:'Domyślny obiekt referencyjny', wasteLabel:'Domyślny zapas na docinki (%)',
+  unitsTitle:'Jednostki imperialne', unitsDesc:'Pokazuj wyniki w stopach kwadratowych zamiast m².',
+  roundTitle:'Zaokrąglaj do pełnych opakowań', roundDesc:'Wyłącz, żeby widzieć dokładną ilość bez zaokrąglania w górę.',
+  aiGroup:'Sztuczna inteligencja',
+  searchTitle:'Wyszukiwanie w internecie', searchDesc:'AI sprawdza aktualne ceny i produkty online. Wyłączenie przyspiesza odpowiedzi.',
+  gpsTitle:'Używaj lokalizacji GPS', gpsDesc:'Pozwala AI analizować sklepy konkretnie w Twojej okolicy.',
+  defStdLabel:'Domyślny standard materiałów',
+  dataGroup:'Dane', savedCount:n=>`Zapisane pomiary: ${n}`, savedCountDesc:'Przechowywane tylko w tej sesji przeglądarki.',
+  clearBtn:'Usuń wszystkie zapisane pomiary', clearConfirm:'Usunąć wszystkie zapisane pomiary?',
+  aboutGroup:'O aplikacji',
+  aboutText:'MetrBudowa AI — prototyp. Pomiar aparatem metodą kalibracji referencyjnej, kalkulator materiałów oraz asystent AI z dostępem do internetu. Wyniki mają charakter orientacyjny i nie zastępują pomiaru miarą ani wyceny u sprzedawcy.',
+  m2:'m²', sqft:'ft²',
+  cats:{Malowanie:'Malowanie',ŚcianyDekor:'Ściany dekor.',Tynki:'Tynki',Płytki:'Płytki',Regipsy:'Regipsy',Sufity:'Sufity',Łazienka:'Łazienka',Elektryka:'Elektryka',Ogrzewanie:'Ogrzewanie',Chemia:'Chemia',Podłogi:'Podłogi',Dach:'Dach',Izolacja:'Izolacja',Zewnętrzne:'Zewnętrzne'}
+ },
+ en:{
+  hdrTag:'AI · measure · materials',
+  tabs:{pomiar:'Measure',kalkulator:'Calculator',ai:'AI analysis',ceny:'Prices',ustawienia:'Settings'},
+  calibTitle:'How it works',
+  howStep1:'Put an A4 sheet on the wall you are measuring',
+  howStep1d:'The app needs to know how many centimetres one pixel is. The sheet is the reference — a door or an unrolled tape measure works too.',
+  howStep2:'Mark both ends of the sheet',
+  howStep2d:'Aim with the crosshair in the middle of the screen and press the big button. After two points the app knows the scale.',
+  howStep3:'Trace the wall corner by corner',
+  howStep3d:'Three points minimum. The area in m² updates as you go. Drag a point with your finger if you missed.',
+  howReady:'Got it — start',
+  stepBar1:'Scale', stepBar2:'Outline', stepBar3:'Done',
+  addPoint:'Add point', pointAdded:'Point added',
+  dragHint:'Drag a point to adjust it',
+  aimHint:'Line up the crosshair and press the button',
+  calibHint:'The app calculates area from a known dimension in frame — works on any phone with a camera, no LiDAR needed. Accuracy approx. ±5–10%.',
+  refLabel:'Reference object', customRefLabel:'Reference length (cm)', customRefPh:'e.g. 150',
+  startCam:'Turn on camera and start',
+  refs:[['21','A4 sheet — short edge (21 cm)'],['29.7','A4 sheet — long edge (29.7 cm)'],['200','Door — height (200 cm)'],['90','Door — width (90 cm)'],['100','Tape measure at 1 m (100 cm)'],['custom','Other — enter length']],
+  step1:'Tap the 1st end of the reference', step2:'Tap the 2nd end of the reference',
+  stepPoly:n=>`Tap the surface corners (min. 3) — ${n}`,
+  stepOpen:n=>`Tap the opening corners — ${n}`,
+  stepReady:'Add more corners or save the measurement',
+  scale:'scale', perim:'perimeter', points:'points', openings:'openings',
+  undo:'Undo', addOpening:'+ Opening', closeOpening:'Close opening', save:'Save',
+  savePrompt:'Measurement name', surfaceN:n=>'Surface '+n,
+  camErr:n=>`Camera access failed (${n}). Check camera permissions in your browser settings and reload the page.`,
+  retry:'Try again',
+  calcTitle:'Material calculator', calcSub:'Full catalogue: painting, plaster, tiles, drywall, sealants, floors and roofing.',
+  savedLabel:'Saved measurements', chipEmpty:'No saved measurements — measure in the "Measure" tab or enter an area manually.',
+  areaLabel:'Area', areaPh:'e.g. 24.5',
+  coverage:'Coverage', layers:'Coats / multiplier', need:'you need',
+  aiTitle:'AI analysis', aiSub:'Describe the job — AI picks materials with current prices, tools and the work sequence.',
+  taskLabel:'Job description', taskPh:'e.g. Painting an 18 m² room, walls previously done in oil paint, ceiling included, one window.',
+  aiAreaLabel:'Area (m²)', stdLabel:'Grade',
+  stds:['Budget','Standard','Premium'],
+  analyze:'Analyse and pick materials', analyzing:'AI is analysing the job…',
+  noTask:'Describe the job first.',
+  quick:[['Painting a room','Painting a room: walls over old paint, some hairline cracks. '],['Bathroom tiling','Tiling a bathroom: walls and floor, 60x30 tiles. '],['Drywall partition','Drywall build: stud partition, 2.6 m high. '],['Roofing','Replacing roof covering: gable roof, metal roof tiles. '],['Flooring','Self-levelling screed and laminate flooring in the living room. ']],
+  priceTitle:'Prices and shops', priceSub:'AI searches the web for current prices and analyses builders merchants near you.',
+  queryLabel:'What are you looking for', queryPh:'e.g. white latex paint 10 l',
+  cityLabel:'City / area (optional)', cityPh:'e.g. Manchester',
+  priceSearch:'Search current prices', priceSearching:'AI is searching the web for prices…',
+  noQuery:'Enter a material name.', liveBadge:'searched live',
+  locateBtn:'Analyse shops near me (AI + GPS)', locating:'Getting your location…',
+  analyzingStores:'Analysing shops…', storesLoading:'AI is checking builders merchants near you…',
+  storesBadge:'AI analysis · your location', refreshArea:'Refresh area analysis',
+  mapLink:'See them on the map', mapLinkSub:'opens Google Maps with directions',
+  noLoc:'No location access — enable location permissions for your browser, or type a city in the field above.',
+  openMaps:'Open Google Maps →',
+  aiErr:m=>`Could not reach the AI (${m}). Try again in a moment.`,
+  priceNotice:'<b>About these prices:</b> the AI searches for them live on the web, so they may differ from a specific shop and do not replace checking with the seller. In a production version this is worth backing with a price-comparison API or partnership deals with retail chains.',
+  gpsOff:'GPS shop analysis is switched off in settings.',
+  demoBadge:'EXAMPLE', demoNote:'This is a sample result showing how the feature works. In the full version the AI searches current data online and tailors it to your job and location.',
+  demoHint:'Test version — AI features show sample results.',
+  costTitle:'Job cost estimate', costSub:'AI checks current material prices and estimates both material and labour cost.',
+  costJobLabel:'Type of work', costAreaLabel:'Area', costRegionLabel:'Region / city (affects labour rates)',
+  costRegionPh:'e.g. Manchester',
+  costLabourLabel:'Include labour',
+  costLabourSelf:'Doing it myself — materials only', costLabourHire:'Hiring a tradesperson',
+  costBtn:'Estimate the cost', costLoading:'AI is checking prices and calculating…',
+  costNoJob:'Pick a type of work and enter an area.',
+  costBadge:'AI estimate · live web prices',
+  costUseSaved:'use a saved measurement',
+  jobs:[
+   ['Walls and ceilings',[
+     ['painting','Painting walls and ceiling'],
+     ['skim','Skimming + painting'],
+     ['plaster','Machine plastering'],
+     ['wallpaper','Wallpapering'],
+     ['decoplaster','Decorative plaster / microcement'],
+     ['concrete','Architectural concrete'],
+     ['slats','Wall slats and 3D panels'],
+     ['drywall','Drywall stud partition'],
+     ['drylining','Dry lining existing walls'],
+     ['acoustic','Acoustic wall insulation'],
+     ['suspceiling','Suspended plasterboard ceiling'],
+     ['stretchceiling','Stretch ceiling'],
+     ['coving','Coving and cornices']]],
+   ['Flooring',[
+     ['floor','Screed + laminate flooring'],
+     ['vinyl','LVT / SPC vinyl'],
+     ['parquet','Engineered wood / parquet'],
+     ['carpet','Carpet or PVC flooring'],
+     ['sanding','Floor sanding and lacquering'],
+     ['anhydrite','Anhydrite screed'],
+     ['ufh','Underfloor heating (mat or pipes)'],
+     ['epoxy','Epoxy resin floor (garage, cellar)'],
+     ['skirting','Skirting boards']]],
+   ['Bathroom and kitchen',[
+     ['tiles','Tiling (walls or floor)'],
+     ['bigtiles','Large-format tiling'],
+     ['wetroom','Tanking under tiles'],
+     ['sanitary','Sanitaryware fitting (basin, WC, bath)'],
+     ['plumbing','Water and waste pipework'],
+     ['shower','Shower enclosure / linear drain'],
+     ['grouting','Grouting and sealing'],
+     ['splashback','Kitchen splashback']]],
+   ['Services',[
+     ['electrics','Electrics: sockets and light points'],
+     ['fuseboard','Consumer unit'],
+     ['lighting','Lighting: LED strips, downlights'],
+     ['ventilation','Ventilation / heat recovery'],
+     ['radiators','Radiators and pipework']]],
+   ['Loft and stairs',[
+     ['loft','Loft conversion lining (board + wool)'],
+     ['loftinsul','Loft / flat roof insulation'],
+     ['stairs','Internal staircase finishing']]],
+   ['Outdoor',[
+     ['facade','External wall insulation'],
+     ['render','External render'],
+     ['roof','Roof covering'],
+     ['terrace','Terrace / balcony (tiles + waterproofing)'],
+     ['paving','Block paving, driveway'],
+     ['fence','Fencing']]],
+   ['Other',[['custom','Other — I will describe it']]]
+  ],
+  costCustomLabel:'Job description (if "Other")',
+  proTitle:'Find a tradesperson', proSub:'AI searches for publicly advertising tradespeople and firms in your area. Results come from listings — verify them at the source.',
+  proTradeLabel:'What trade are you looking for', proTradePh:'e.g. tiler, building crew, roofer',
+  proAreaLabel:'City / area', proBtn:'Search for tradespeople', proLoading:'AI is searching listings…',
+  proNoTrade:'Enter the trade you are looking for.', proBadge:'results from public listings',
+  proSource:'source', proTypeFirm:'company', proTypeFreelance:'sole trader',
+  proNote:'The app does not create its own ratings or store contractor data — it shows what is publicly advertised, with a link to the source. Check reviews and credentials directly on the listing and ask for references.',
+  proAskLabel:'Copy enquiry to send', proCopied:'Copied',
+  costDisclaimer:'Indicative estimate only. The real cost depends on substrate condition, access, timing and the specific contractor — treat it as a starting point for a conversation, not a quote.',
+  ctTotal:'Total cost', ctPer:m=>'per '+m, ctMaterials:'Materials', ctLabour:'Labour',
+  secMaterials:'Materials — line items', secLabour:'Labour — stages', secSave:'Where you can save',
+  subMaterials:'Materials subtotal', subLabour:'Labour subtotal',
+  qtyOf:'pcs', unitPrice:'unit price', drivers:'What drives the price',
+  srcPrefix:'Prices checked:',
+  secProducts:'Trusted products', secTools:'Tools', secSteps:'Work sequence', secWarn:'Watch out for',
+  subTools:'Tools subtotal', ctTools:'Tools', toolBuy:'buy', toolRent:'hire', toolHave:'usually owned',
+  ctMatOnly:'Material cost', analysisBadge:'AI analysis · live web prices',
+  costHintLabour:'Labour estimate — see the "Prices" tab',
+  setTitle:'Settings', setSub:'Language, measurement defaults and AI behaviour.',
+  langGroup:'Language', langNote:'Changing the language switches the interface, the material catalogue and the language the AI replies in.',
+  marketGroup:'Market and prices', marketLabel:'Country to price for',
+  marketAuto:'Automatic from GPS', marketNote:'Prices, shops and currency follow the chosen country. On automatic, the AI works out the country from your coordinates — override it if you are pricing a job abroad.',
+  marketDetected:c=>'Detected: '+c, marketNoGps:'No location detected yet — use the button in the "Prices" tab.',
+  marketAutoLabel:'Automatic (from GPS)',
+  measGroup:'Measurement and calculation',
+  defRefLabel:'Default reference object', wasteLabel:'Default waste allowance (%)',
+  unitsTitle:'Imperial units', unitsDesc:'Show results in square feet instead of m².',
+  roundTitle:'Round up to full packs', roundDesc:'Turn off to see the exact quantity without rounding up.',
+  aiGroup:'Artificial intelligence',
+  searchTitle:'Web search', searchDesc:'AI checks current prices and products online. Turning it off makes replies faster.',
+  gpsTitle:'Use GPS location', gpsDesc:'Lets the AI analyse shops specifically in your area.',
+  defStdLabel:'Default material grade',
+  dataGroup:'Data', savedCount:n=>`Saved measurements: ${n}`, savedCountDesc:'Kept only in this browser session.',
+  clearBtn:'Delete all saved measurements', clearConfirm:'Delete all saved measurements?',
+  aboutGroup:'About',
+  aboutText:'MetrBudowa AI — prototype. Camera measurement via reference calibration, a material calculator and an AI assistant with web access. Results are indicative and do not replace measuring with a tape or a quote from a seller.',
+  m2:'m²', sqft:'ft²',
+  cats:{Malowanie:'Painting',ŚcianyDekor:'Wall finishes',Tynki:'Plaster',Płytki:'Tiles',Regipsy:'Drywall',Sufity:'Ceilings',Łazienka:'Bathroom',Elektryka:'Electrics',Ogrzewanie:'Heating',Chemia:'Sealants',Podłogi:'Flooring',Dach:'Roofing',Izolacja:'Insulation',Zewnętrzne:'Outdoor'}
+ },
+ nl:{
+  hdrTag:'AI · meten · materialen',
+  tabs:{pomiar:'Meten',kalkulator:'Calculator',ai:'AI-analyse',ceny:'Prijzen',ustawienia:'Instellingen'},
+  calibTitle:'Zo werkt het',
+  howStep1:'Leg een A4-vel tegen de wand die je meet',
+  howStep1d:'De app moet weten hoeveel centimeter één pixel is. Het vel is de maatstaf — een deur of uitgerolde rolmaat kan ook.',
+  howStep2:'Markeer beide uiteinden van het vel',
+  howStep2d:'Richt met het kruis midden op het scherm en druk op de grote knop. Na twee punten kent de app de schaal.',
+  howStep3:'Trek de wand na, hoek voor hoek',
+  howStep3d:'Minimaal drie punten. De oppervlakte in m² loopt direct mee. Sleep een punt met je vinger als je ernaast zat.',
+  howReady:'Duidelijk — beginnen',
+  stepBar1:'Schaal', stepBar2:'Omtrek', stepBar3:'Klaar',
+  addPoint:'Punt toevoegen', pointAdded:'Punt toegevoegd',
+  dragHint:'Sleep een punt om het te corrigeren',
+  aimHint:'Richt het kruis en druk op de knop',
+  calibHint:'De app berekent de oppervlakte aan de hand van een bekende maat in beeld — werkt op elke telefoon met camera, zonder LiDAR. Nauwkeurigheid ca. ±5–10%.',
+  refLabel:'Referentieobject', customRefLabel:'Lengte referentie (cm)', customRefPh:'bijv. 150',
+  startCam:'Camera aanzetten en beginnen',
+  refs:[['21','A4-vel — korte zijde (21 cm)'],['29.7','A4-vel — lange zijde (29,7 cm)'],['200','Deur — hoogte (200 cm)'],['90','Deur — breedte (90 cm)'],['100','Rolmaat op 1 m (100 cm)'],['custom','Anders — lengte invoeren']],
+  step1:'Tik op het 1e uiteinde van de referentie', step2:'Tik op het 2e uiteinde van de referentie',
+  stepPoly:n=>`Tik de hoeken van het vlak aan (min. 3) — ${n}`,
+  stepOpen:n=>`Tik de hoeken van de opening aan — ${n}`,
+  stepReady:'Voeg hoeken toe of sla de meting op',
+  scale:'schaal', perim:'omtrek', points:'punten', openings:'openingen',
+  undo:'Ongedaan maken', addOpening:'+ Opening', closeOpening:'Opening sluiten', save:'Opslaan',
+  savePrompt:'Naam van de meting', surfaceN:n=>'Vlak '+n,
+  camErr:n=>`Geen toegang tot de camera (${n}). Controleer de camerarechten in je browserinstellingen en herlaad de pagina.`,
+  retry:'Opnieuw proberen',
+  calcTitle:'Materialencalculator', calcSub:'Volledige catalogus: schilderwerk, stucwerk, tegels, gipsplaat, kitwerk, vloeren en daken.',
+  savedLabel:'Opgeslagen metingen', chipEmpty:'Nog geen metingen — meet via het tabblad „Meten" of vul de oppervlakte handmatig in.',
+  areaLabel:'Oppervlakte', areaPh:'bijv. 24.5',
+  coverage:'Verbruik', layers:'Lagen / factor', need:'nodig',
+  aiTitle:'AI-analyse', aiSub:'Beschrijf de klus — AI kiest materialen met actuele prijzen, gereedschap en de werkvolgorde.',
+  taskLabel:'Omschrijving van de klus', taskPh:'bijv. Kamer van 18 m² schilderen, wanden met oude verf, plafond mee, één raam.',
+  aiAreaLabel:'Oppervlakte (m²)', stdLabel:'Kwaliteitsklasse',
+  stds:['Voordelig','Standaard','Premium'],
+  analyze:'Analyseer en kies materialen', analyzing:'AI analyseert de klus…',
+  noTask:'Beschrijf eerst de klus.',
+  quick:[['Kamer schilderen','Kamer schilderen: wanden met oude verf, kleine haarscheurtjes. '],['Badkamer betegelen','Badkamer betegelen: wanden en vloer, tegels 60x30. '],['Gipswand','Gipsplaatwand: scheidingswand op profielen, hoogte 2,6 m. '],['Dak','Dakbedekking vervangen: zadeldak, metalen dakpanplaten. '],['Vloer','Egaline en laminaat in de woonkamer. ']],
+  priceTitle:'Prijzen en winkels', priceSub:'AI zoekt actuele prijzen op internet en analyseert bouwmarkten bij jou in de buurt.',
+  queryLabel:'Waar zoek je naar', queryPh:'bijv. witte latex muurverf 10 l',
+  cityLabel:'Stad / omgeving (optioneel)', cityPh:'bijv. Utrecht',
+  priceSearch:'Actuele prijzen zoeken', priceSearching:'AI zoekt prijzen op internet…',
+  noQuery:'Vul een materiaalnaam in.', liveBadge:'live opgezocht',
+  locateBtn:'Winkels in mijn buurt analyseren (AI + GPS)', locating:'Locatie bepalen…',
+  analyzingStores:'Winkels analyseren…', storesLoading:'AI bekijkt bouwmarkten bij jou in de buurt…',
+  storesBadge:'AI-analyse · jouw locatie', refreshArea:'Analyse van de buurt vernieuwen',
+  mapLink:'Bekijk ze op de kaart', mapLinkSub:'opent Google Maps met route',
+  noLoc:'Geen toegang tot locatie — zet locatierechten voor je browser aan, of vul hierboven een stad in.',
+  openMaps:'Google Maps openen →',
+  aiErr:m=>`Geen verbinding met de AI (${m}). Probeer het zo nog eens.`,
+  priceNotice:'<b>Over deze prijzen:</b> de AI zoekt ze live op internet, dus ze kunnen afwijken van een specifieke winkel en vervangen niet het navragen bij de verkoper. In een productieversie is het verstandig dit te onderbouwen met een prijsvergelijker-API of afspraken met ketens.',
+  gpsOff:'Winkelanalyse via GPS staat uit in de instellingen.',
+  demoBadge:'VOORBEELD', demoNote:'Dit is een voorbeeldresultaat dat laat zien hoe de functie werkt. In de volledige versie zoekt de AI actuele gegevens online en stemt ze af op jouw klus en locatie.',
+  demoHint:'Testversie — AI-functies tonen voorbeeldresultaten.',
+  costTitle:'Kostenraming', costSub:'AI controleert actuele materiaalprijzen en raamt materiaal- en arbeidskosten.',
+  costJobLabel:'Soort werk', costAreaLabel:'Oppervlakte', costRegionLabel:'Regio / stad (bepaalt uurtarieven)',
+  costRegionPh:'bijv. Rotterdam',
+  costLabourLabel:'Arbeid meerekenen',
+  costLabourSelf:'Doe ik zelf — alleen materiaal', costLabourHire:'Ik huur een vakman in',
+  costBtn:'Kosten ramen', costLoading:'AI controleert prijzen en rekent…',
+  costNoJob:'Kies een soort werk en vul een oppervlakte in.',
+  costBadge:'AI-raming · live prijzen van internet',
+  costUseSaved:'gebruik een opgeslagen meting',
+  jobs:[
+   ['Wanden en plafonds',[
+     ['painting','Wanden en plafond schilderen'],
+     ['skim','Uitvlakken + schilderen'],
+     ['plaster','Machinaal stucwerk'],
+     ['wallpaper','Behangen'],
+     ['decoplaster','Sierpleister / microcement'],
+     ['concrete','Architectonisch beton'],
+     ['slats','Wandlamellen en 3D-panelen'],
+     ['drywall','Gipsplaat scheidingswand'],
+     ['drylining','Wanden voorzetten met gipsplaat'],
+     ['acoustic','Akoestische wandisolatie'],
+     ['suspceiling','Verlaagd gipsplafond'],
+     ['stretchceiling','Spanplafond'],
+     ['coving','Sierlijsten en plafondlijsten']]],
+   ['Vloeren',[
+     ['floor','Egaline + laminaat'],
+     ['vinyl','Vinyl LVT / SPC'],
+     ['parquet','Meerlaags parket'],
+     ['carpet','Tapijt of PVC-vloer'],
+     ['sanding','Schuren en lakken'],
+     ['anhydrite','Anhydriet dekvloer'],
+     ['ufh','Vloerverwarming (mat of leidingen)'],
+     ['epoxy','Epoxy gietvloer (garage, kelder)'],
+     ['skirting','Plinten']]],
+   ['Badkamer en keuken',[
+     ['tiles','Tegelwerk (wand of vloer)'],
+     ['bigtiles','Grootformaat tegels'],
+     ['wetroom','Waterdichting onder tegels'],
+     ['sanitary','Sanitair plaatsen (wastafel, wc, bad)'],
+     ['plumbing','Water- en afvoerleidingen'],
+     ['shower','Douchecabine / lijnafvoer'],
+     ['grouting','Voegen en kitten'],
+     ['splashback','Achterwand keuken']]],
+   ['Installaties',[
+     ['electrics','Elektra: stopcontacten en lichtpunten'],
+     ['fuseboard','Meterkast / groepenkast'],
+     ['lighting','Verlichting: ledstrips, inbouwspots'],
+     ['ventilation','Ventilatie / wtw-installatie'],
+     ['radiators','Radiatoren en leidingwerk']]],
+   ['Zolder en trap',[
+     ['loft','Zolder afwerken (gipsplaat + wol)'],
+     ['loftinsul','Dak- of zolderisolatie'],
+     ['stairs','Binnentrap afwerken']]],
+   ['Buiten',[
+     ['facade','Gevelisolatie'],
+     ['render','Buitenstucwerk'],
+     ['roof','Dakbedekking'],
+     ['terrace','Terras / balkon (tegels + waterdichting)'],
+     ['paving','Bestrating, oprit'],
+     ['fence','Schutting']]],
+   ['Overig',[['custom','Anders — ik beschrijf het zelf']]]
+  ],
+  costCustomLabel:'Omschrijving (bij „Anders")',
+  proTitle:'Vakman zoeken', proSub:'AI zoekt vaklieden en bedrijven die zich publiek aanbieden in jouw omgeving. Resultaten komen uit advertenties — controleer ze bij de bron.',
+  proTradeLabel:'Welke vakman zoek je', proTradePh:'bijv. tegelzetter, klusbedrijf, dakdekker',
+  proAreaLabel:'Stad / omgeving', proBtn:'Zoek vaklieden', proLoading:'AI doorzoekt advertenties…',
+  proNoTrade:'Vul in welke vakman je zoekt.', proBadge:'resultaten uit openbare advertenties',
+  proSource:'bron', proTypeFirm:'bedrijf', proTypeFreelance:"zzp'er",
+  proNote:'De app maakt geen eigen beoordelingen en bewaart geen gegevens van vaklieden — hij toont wat openbaar is geadverteerd, met een link naar de bron. Controleer reviews en betrouwbaarheid rechtstreeks bij de advertentie en vraag om referenties.',
+  proAskLabel:'Kopieer bericht aan vakman', proCopied:'Gekopieerd',
+  costDisclaimer:'Indicatieve raming. De werkelijke kosten hangen af van de ondergrond, bereikbaarheid, planning en de specifieke uitvoerder — zie dit als startpunt voor een gesprek, niet als offerte.',
+  ctTotal:'Totale kosten', ctPer:m=>'per '+m, ctMaterials:'Materiaal', ctLabour:'Arbeid',
+  secMaterials:'Materiaal — posten', secLabour:'Arbeid — fasen', secSave:'Waar je kunt besparen',
+  subMaterials:'Subtotaal materiaal', subLabour:'Subtotaal arbeid',
+  qtyOf:'st.', unitPrice:'stukprijs', drivers:'Wat de prijs bepaalt',
+  srcPrefix:'Prijzen gecontroleerd:',
+  secProducts:'Beproefde producten', secTools:'Gereedschap', secSteps:'Werkvolgorde', secWarn:'Let op',
+  subTools:'Subtotaal gereedschap', ctTools:'Gereedschap', toolBuy:'kopen', toolRent:'huren', toolHave:'heb je meestal',
+  ctMatOnly:'Materiaalkosten', analysisBadge:'AI-analyse · live prijzen van internet',
+  costHintLabour:'Raming van arbeid — zie het tabblad „Prijzen"',
+  setTitle:'Instellingen', setSub:'Taal, standaardwaarden voor metingen en gedrag van de AI.',
+  langGroup:'Taal', langNote:'Het wijzigen van de taal past de interface, de materialencatalogus en de taal van de AI-antwoorden aan.',
+  marketGroup:'Markt en prijzen', marketLabel:'Land waarvoor prijzen gelden',
+  marketAuto:'Automatisch via GPS', marketNote:'Prijzen, winkels en valuta volgen het gekozen land. Op automatisch bepaalt de AI het land uit je coördinaten — overschrijf dit als je een klus in het buitenland calculeert.',
+  marketDetected:c=>'Gevonden: '+c, marketNoGps:'Nog geen locatie bekend — gebruik de knop op het tabblad „Prijzen".',
+  marketAutoLabel:'Automatisch (via GPS)',
+  measGroup:'Meten en calculeren',
+  defRefLabel:'Standaard referentieobject', wasteLabel:'Standaard snijverlies (%)',
+  unitsTitle:'Imperiale eenheden', unitsDesc:'Toon resultaten in vierkante voet in plaats van m².',
+  roundTitle:'Afronden op hele verpakkingen', roundDesc:'Zet uit om de exacte hoeveelheid te zien zonder naar boven af te ronden.',
+  aiGroup:'Kunstmatige intelligentie',
+  searchTitle:'Zoeken op internet', searchDesc:'AI controleert actuele prijzen en producten online. Uitzetten maakt antwoorden sneller.',
+  gpsTitle:'GPS-locatie gebruiken', gpsDesc:'Hiermee kan de AI winkels specifiek in jouw omgeving analyseren.',
+  defStdLabel:'Standaard kwaliteitsklasse',
+  dataGroup:'Gegevens', savedCount:n=>`Opgeslagen metingen: ${n}`, savedCountDesc:'Alleen bewaard in deze browsersessie.',
+  clearBtn:'Alle opgeslagen metingen verwijderen', clearConfirm:'Alle opgeslagen metingen verwijderen?',
+  aboutGroup:'Over de app',
+  aboutText:'MetrBudowa AI — prototype. Meten met de camera via referentiekalibratie, een materialencalculator en een AI-assistent met internettoegang. Resultaten zijn indicatief en vervangen geen meting met een rolmaat of een offerte van een verkoper.',
+  m2:'m²', sqft:'ft²',
+  cats:{Malowanie:'Schilderwerk',ŚcianyDekor:'Wandafwerking',Tynki:'Stucwerk',Płytki:'Tegels',Regipsy:'Gipsplaat',Sufity:'Plafonds',Łazienka:'Badkamer',Elektryka:'Elektra',Ogrzewanie:'Verwarming',Chemia:'Kitwerk',Podłogi:'Vloeren',Dach:'Dak',Izolacja:'Isolatie',Zewnętrzne:'Buiten'}
+ }
+};
+
+/* ==================== RYNKI EUROPEJSKIE ==================== */
+const MARKETS=[
+ {c:'PL',cur:'zł',  pl:'Polska',        en:'Poland',         shops:'Leroy Merlin, Castorama, OBI, PSB Mrówka, Bricomarché'},
+ {c:'DE',cur:'€',   pl:'Niemcy',        en:'Germany',        shops:'OBI, Bauhaus, Hornbach, Toom, Hagebaumarkt'},
+ {c:'GB',cur:'£',   pl:'Wielka Brytania',en:'United Kingdom',shops:'Screwfix, B&Q, Wickes, Toolstation, Travis Perkins'},
+ {c:'IE',cur:'€',   pl:'Irlandia',      en:'Ireland',        shops:'Woodie\'s, Chadwicks, Screwfix IE'},
+ {c:'NL',cur:'€',   pl:'Holandia',      en:'Netherlands',    shops:'Gamma, Praxis, Hornbach, Karwei'},
+ {c:'BE',cur:'€',   pl:'Belgia',        en:'Belgium',        shops:'Brico, Hubo, Gamma, Hornbach'},
+ {c:'FR',cur:'€',   pl:'Francja',       en:'France',         shops:'Leroy Merlin, Castorama, Brico Dépôt, Point P'},
+ {c:'ES',cur:'€',   pl:'Hiszpania',     en:'Spain',          shops:'Leroy Merlin, Bricomart, BricoDepot, Bauhaus'},
+ {c:'PT',cur:'€',   pl:'Portugalia',    en:'Portugal',       shops:'Leroy Merlin, Aki, MaxMat'},
+ {c:'IT',cur:'€',   pl:'Włochy',        en:'Italy',          shops:'Leroy Merlin, OBI, Bricocenter, Bricoman'},
+ {c:'AT',cur:'€',   pl:'Austria',       en:'Austria',        shops:'OBI, Bauhaus, Hornbach, Lagerhaus'},
+ {c:'CH',cur:'CHF', pl:'Szwajcaria',    en:'Switzerland',    shops:'Jumbo, Hornbach, Bauhaus, Coop Bau+Hobby'},
+ {c:'CZ',cur:'Kč',  pl:'Czechy',        en:'Czechia',        shops:'Hornbach, OBI, Bauhaus, Baumax'},
+ {c:'SK',cur:'€',   pl:'Słowacja',      en:'Slovakia',       shops:'Hornbach, OBI, Merkury Market'},
+ {c:'HU',cur:'Ft',  pl:'Węgry',         en:'Hungary',        shops:'OBI, Praktiker, Bauhaus'},
+ {c:'LT',cur:'€',   pl:'Litwa',         en:'Lithuania',      shops:'Senukai, Ermitažas, Depo'},
+ {c:'LV',cur:'€',   pl:'Łotwa',         en:'Latvia',         shops:'Depo, K-Rauta, Kruza'},
+ {c:'EE',cur:'€',   pl:'Estonia',       en:'Estonia',        shops:'Bauhof, Espak, K-Rauta'},
+ {c:'SE',cur:'kr',  pl:'Szwecja',       en:'Sweden',         shops:'Bauhaus, Byggmax, Beijer, Hornbach'},
+ {c:'NO',cur:'kr',  pl:'Norwegia',      en:'Norway',         shops:'Maxbo, Byggmakker, Obs Bygg'},
+ {c:'DK',cur:'kr',  pl:'Dania',         en:'Denmark',        shops:'Bauhaus, Silvan, Stark, jem & fix'},
+ {c:'FI',cur:'€',   pl:'Finlandia',     en:'Finland',        shops:'K-Rauta, Bauhaus, Puuilo'},
+ {c:'RO',cur:'lei', pl:'Rumunia',       en:'Romania',        shops:'Dedeman, Leroy Merlin, Hornbach, Arabesque'},
+ {c:'BG',cur:'лв',  pl:'Bułgaria',      en:'Bulgaria',       shops:'Praktiker, Mr. Bricolage, HomeMax'},
+ {c:'HR',cur:'€',   pl:'Chorwacja',     en:'Croatia',        shops:'Bauhaus, Pevex, Emmezeta'},
+ {c:'SI',cur:'€',   pl:'Słowenia',      en:'Slovenia',       shops:'Bauhaus, Merkur, Obi'},
+ {c:'GR',cur:'€',   pl:'Grecja',        en:'Greece',         shops:'Leroy Merlin, Praktiker, Bricorama'},
+ {c:'UA',cur:'₴',   pl:'Ukraina',       en:'Ukraine',        shops:'Epicentr K, Nova Liniya, Leroy Merlin'},
+];
+function marketByCode(c){return MARKETS.find(m=>m.c===c)||null;}
+/* zgrubne ramy krajów — służy tylko do podpowiedzi w ustawieniach;
+   właściwe rozpoznanie kraju robi AI na podstawie współrzędnych */
+const BOXES=[
+ ['PL',49.0,54.9,14.1,24.2],['DE',47.2,55.1,5.8,15.1],['GB',49.8,60.9,-8.7,1.8],['IE',51.4,55.4,-10.6,-5.9],
+ ['NL',50.7,53.6,3.3,7.3],['BE',49.4,51.6,2.5,6.4],['FR',41.3,51.1,-5.2,8.3],['ES',35.9,43.8,-9.4,3.4],
+ ['PT',36.9,42.2,-9.6,-6.1],['IT',35.4,47.1,6.6,18.6],['AT',46.3,49.1,9.5,17.2],['CH',45.8,47.9,5.9,10.5],
+ ['CZ',48.5,51.1,12.0,18.9],['SK',47.7,49.7,16.8,22.6],['HU',45.7,48.6,16.6,22.9],['LT',53.8,56.5,20.9,26.9],
+ ['LV',55.6,58.1,20.9,28.3],['EE',57.5,59.7,21.7,28.2],['SE',55.3,69.1,11.0,24.2],['NO',57.9,71.2,4.5,31.1],
+ ['DK',54.5,57.8,8.0,15.2],['FI',59.7,70.1,20.5,31.6],['RO',43.6,48.3,20.2,29.7],['BG',41.2,44.2,22.3,28.6],
+ ['HR',42.3,46.6,13.4,19.5],['SI',45.4,46.9,13.3,15.9],['GR',34.8,41.8,19.3,28.3],['UA',44.3,52.4,22.1,40.2],
+];
+function guessMarket(la,ln){
+  const hit=BOXES.filter(b=>la>=b[1]&&la<=b[2]&&ln>=b[3]&&ln<=b[4]);
+  if(!hit.length)return null;      // poza Europą — niech decyduje AI
+  // ramy się nakładają, więc wygrywa najmniejsza (najbardziej konkretna)
+  hit.sort((a,b)=>((a[2]-a[1])*(a[4]-a[3]))-((b[2]-b[1])*(b[4]-b[3])));
+  return marketByCode(hit[0][0]);
+}
+
+/* ==================== KATALOG MATERIAŁÓW ==================== */
+const MATERIALS=[
+ {cat:'Malowanie',pl:'Farba emulsyjna (ściany)',nl:'Muurverf (wanden)',en:'Emulsion paint (walls)',unit:'l',cov:0.1,pack:10,packPl:'wiadro 10 l',packEn:'10 l tub',packNl:'emmer 10 l',layers:2},
+ {cat:'Malowanie',pl:'Farba lateksowa zmywalna',nl:'Afwasbare latexverf',en:'Washable latex paint',unit:'l',cov:0.11,pack:10,packPl:'wiadro 10 l',packEn:'10 l tub',packNl:'emmer 10 l',layers:2},
+ {cat:'Malowanie',pl:'Grunt głęboko penetrujący',nl:'Diepteprimer',en:'Deep-penetrating primer',unit:'l',cov:0.15,pack:5,packPl:'kanister 5 l',packEn:'5 l can',packNl:'jerrycan 5 l',layers:1},
+ {cat:'Malowanie',pl:'Farba elewacyjna',nl:'Gevelverf',en:'Exterior masonry paint',unit:'l',cov:0.2,pack:10,packPl:'wiadro 10 l',packEn:'10 l tub',packNl:'emmer 10 l',layers:2},
+ {cat:'Tynki',pl:'Gładź szpachlowa',nl:'Fijne plamuur',en:'Skim coat filler',unit:'kg',cov:1.2,pack:20,packPl:'worek 20 kg',packEn:'20 kg bag',packNl:'zak 20 kg',layers:2},
+ {cat:'Tynki',pl:'Tynk gipsowy (10 mm)',nl:'Gipspleister (10 mm)',en:'Gypsum plaster (10 mm)',unit:'kg',cov:8.5,pack:30,packPl:'worek 30 kg',packEn:'30 kg bag',packNl:'zak 30 kg',layers:1},
+ {cat:'Tynki',pl:'Tynk cementowo-wapienny (15 mm)',nl:'Kalkcementpleister (15 mm)',en:'Cement-lime render (15 mm)',unit:'kg',cov:22,pack:25,packPl:'worek 25 kg',packEn:'25 kg bag',packNl:'zak 25 kg',layers:1},
+ {cat:'Tynki',pl:'Siatka zbrojąca + klej',nl:'Wapeningsgaas + lijm',en:'Reinforcing mesh + adhesive',unit:'m²',cov:1.1,pack:50,packPl:'rolka 50 m²',packEn:'50 m² roll',packNl:'rol 50 m²',layers:1},
+ {cat:'Płytki',pl:'Płytki ceramiczne',nl:'Keramische tegels',en:'Ceramic tiles',unit:'m²',cov:1,pack:1.44,packPl:'karton 1,44 m²',packEn:'1.44 m² box',packNl:'doos 1,44 m²',layers:1,waste:true},
+ {cat:'Płytki',pl:'Klej do płytek',nl:'Tegellijm',en:'Tile adhesive',unit:'kg',cov:4.5,pack:25,packPl:'worek 25 kg',packEn:'25 kg bag',packNl:'zak 25 kg',layers:1},
+ {cat:'Płytki',pl:'Fuga',nl:'Voegmiddel',en:'Grout',unit:'kg',cov:0.5,pack:5,packPl:'opak. 5 kg',packEn:'5 kg pack',packNl:'pak 5 kg',layers:1},
+ {cat:'Płytki',pl:'Folia w płynie (izolacja)',nl:'Vloeibare waterkering',en:'Liquid waterproofing membrane',unit:'kg',cov:1.5,pack:15,packPl:'wiadro 15 kg',packEn:'15 kg tub',packNl:'emmer 15 kg',layers:2},
+ {cat:'Płytki',pl:'Krzyżyki dystansowe',nl:'Tegelkruisjes',en:'Tile spacers',unit:'szt',unitEn:'pcs',cov:12,pack:250,packPl:'opak. 250 szt',packEn:'250 pcs pack',packNl:'pak 250 st.',layers:1},
+ {cat:'Regipsy',pl:'Płyta g-k 1200×2600',nl:'Gipsplaat 1200×2600',en:'Plasterboard 1200×2600',unit:'m²',cov:1,pack:3.12,packPl:'płyta 3,12 m²',packEn:'3.12 m² board',packNl:'plaat 3,12 m²',layers:1,waste:true},
+ {cat:'Regipsy',pl:'Profil CW/UW (konstrukcja)',nl:'Metalstud CW/UW-profiel',en:'CW/UW stud profile',unit:'mb',unitEn:'lm',cov:2.9,pack:4,packPl:'profil 4 mb',packEn:'4 lm profile',packNl:'profiel 4 lm',layers:1},
+ {cat:'Regipsy',pl:'Wkręty do płyt g-k',nl:'Gipsplaatschroeven',en:'Drywall screws',unit:'szt',unitEn:'pcs',cov:25,pack:1000,packPl:'opak. 1000 szt',packEn:'1000 pcs pack',packNl:'pak 1000 st.',layers:1},
+ {cat:'Regipsy',pl:'Masa szpachlowa do spoin',nl:'Voegvuller',en:'Joint compound',unit:'kg',cov:0.45,pack:20,packPl:'worek 20 kg',packEn:'20 kg bag',packNl:'zak 20 kg',layers:1},
+ {cat:'Regipsy',pl:'Taśma spoinowa',nl:'Voegband',en:'Joint tape',unit:'mb',unitEn:'lm',cov:2,pack:90,packPl:'rolka 90 mb',packEn:'90 lm roll',packNl:'rol 90 lm',layers:1},
+ {cat:'Regipsy',pl:'Wełna mineralna wypełniająca (5 cm)',nl:'Minerale wol vulling (5 cm)',en:'Mineral wool infill (5 cm)',unit:'m²',cov:1.05,pack:9,packPl:'paczka 9 m²',packEn:'9 m² pack',packNl:'pak 9 m²',layers:1},
+ {cat:'Chemia',pl:'Silikon sanitarny',nl:'Sanitairkit',en:'Sanitary silicone',unit:'szt',unitEn:'pcs',cov:0.06,pack:1,packPl:'kartusz 300 ml',packEn:'300 ml cartridge',packNl:'koker 300 ml',layers:1,perMb:true},
+ {cat:'Chemia',pl:'Akryl do szczelin',nl:'Acrylaatkit',en:'Decorator caulk',unit:'szt',unitEn:'pcs',cov:0.05,pack:1,packPl:'kartusz 300 ml',packEn:'300 ml cartridge',packNl:'koker 300 ml',layers:1,perMb:true},
+ {cat:'Chemia',pl:'Pianka montażowa',nl:'Montageschuim',en:'Expanding foam',unit:'szt',unitEn:'pcs',cov:0.03,pack:1,packPl:'puszka 750 ml',packEn:'750 ml can',packNl:'bus 750 ml',layers:1,perMb:true},
+ {cat:'Chemia',pl:'Taśma malarska',nl:'Afplaktape',en:'Masking tape',unit:'mb',unitEn:'lm',cov:1,pack:50,packPl:'rolka 50 mb',packEn:'50 lm roll',packNl:'rol 50 lm',layers:1,perMb:true},
+ {cat:'Podłogi',pl:'Panele laminowane',nl:'Laminaat',en:'Laminate flooring',unit:'m²',cov:1,pack:2.22,packPl:'paczka 2,22 m²',packEn:'2.22 m² pack',packNl:'pak 2,22 m²',layers:1,waste:true},
+ {cat:'Podłogi',pl:'Podkład pod panele',nl:'Ondervloer',en:'Underlay',unit:'m²',cov:1.05,pack:15,packPl:'rolka 15 m²',packEn:'15 m² roll',packNl:'rol 15 m²',layers:1},
+ {cat:'Podłogi',pl:'Wylewka samopoziomująca (5 mm)',nl:'Egaline (5 mm)',en:'Self-levelling screed (5 mm)',unit:'kg',cov:8,pack:25,packPl:'worek 25 kg',packEn:'25 kg bag',packNl:'zak 25 kg',layers:1},
+ {cat:'Podłogi',pl:'Listwa przypodłogowa',nl:'Plint',en:'Skirting board',unit:'mb',unitEn:'lm',cov:1,pack:2.5,packPl:'listwa 2,5 mb',packEn:'2.5 lm length',packNl:'lengte 2,5 lm',layers:1,perMb:true},
+ {cat:'Dach',pl:'Blachodachówka',nl:'Metalen dakpanplaat',en:'Metal roof tiles',unit:'m²',cov:1,pack:1,packPl:'m² arkusza',packEn:'m² of sheet',packNl:'m² plaat',layers:1,waste:true},
+ {cat:'Dach',pl:'Dachówka ceramiczna',nl:'Keramische dakpan',en:'Clay roof tiles',unit:'szt',unitEn:'pcs',cov:12,pack:1,packPl:'sztuka',packEn:'piece',packNl:'stuk',layers:1},
+ {cat:'Dach',pl:'Membrana dachowa',nl:'Dakfolie',en:'Roofing membrane',unit:'m²',cov:1.15,pack:75,packPl:'rolka 75 m²',packEn:'75 m² roll',packNl:'rol 75 m²',layers:1},
+ {cat:'Dach',pl:'Łata dachowa (rozstaw 35 cm)',nl:'Panlat (h.o.h. 35 cm)',en:'Roof batten (35 cm centres)',unit:'mb',unitEn:'lm',cov:2.9,pack:4,packPl:'łata 4 mb',packEn:'4 lm batten',packNl:'lat 4 lm',layers:1},
+ {cat:'Dach',pl:'Wkręty farmerskie',nl:'Dakschroeven',en:'Roofing screws',unit:'szt',unitEn:'pcs',cov:8,pack:250,packPl:'opak. 250 szt',packEn:'250 pcs pack',packNl:'pak 250 st.',layers:1},
+ {cat:'Dach',pl:'Papa podkładowa',nl:'Onderlaag dakleer',en:'Underlay felt',unit:'m²',cov:1.15,pack:20,packPl:'rolka 20 m²',packEn:'20 m² roll',packNl:'rol 20 m²',layers:1},
+ {cat:'Izolacja',pl:'Styropian elewacyjny',nl:'EPS gevelisolatie',en:'EPS facade insulation',unit:'m²',cov:1.03,pack:3,packPl:'paczka 3 m²',packEn:'3 m² pack',packNl:'pak 3 m²',layers:1},
+ {cat:'Izolacja',pl:'Kołki do styropianu',nl:'Isolatiepluggen',en:'Insulation fixings',unit:'szt',unitEn:'pcs',cov:6,pack:200,packPl:'opak. 200 szt',packEn:'200 pcs pack',packNl:'pak 200 st.',layers:1},
+ {cat:'Izolacja',pl:'Wełna mineralna dachowa (15 cm)',nl:'Minerale wol dak (15 cm)',en:'Loft mineral wool (15 cm)',unit:'m²',cov:1.05,pack:6,packPl:'paczka 6 m²',packEn:'6 m² pack',packNl:'pak 6 m²',layers:1},
+ {cat:'Izolacja',pl:'Folia paroizolacyjna',nl:'Dampremmende folie',en:'Vapour barrier film',unit:'m²',cov:1.15,pack:75,packPl:'rolka 75 m²',packEn:'75 m² roll',packNl:'rol 75 m²',layers:1},
+ {cat:'Izolacja',pl:'Taśma do paroizolacji',nl:'Tape voor dampremmer',en:'Vapour barrier tape',unit:'mb',unitEn:'lm',cov:1.5,pack:25,packPl:'rolka 25 mb',packEn:'25 lm roll',packNl:'rol 25 lm',layers:1},
+ {cat:'Izolacja',pl:'Wełna akustyczna do ścian (5 cm)',nl:'Akoestische wol wanden (5 cm)',en:'Acoustic wool for walls (5 cm)',unit:'m²',cov:1.05,pack:9,packPl:'paczka 9 m²',packEn:'9 m² pack',packNl:'pak 9 m²',layers:1},
+ // ŚCIANY DEKORACYJNE
+ {cat:'ŚcianyDekor',pl:'Tapeta (rolka 10 m × 53 cm)',nl:'Behang (rol 10 m × 53 cm)',en:'Wallpaper (10 m × 53 cm roll)',unit:'m²',cov:1,pack:5.3,packPl:'rolka 5,3 m²',packEn:'5.3 m² roll',packNl:'rol 5,3 m²',layers:1,waste:true},
+ {cat:'ŚcianyDekor',pl:'Klej do tapet',nl:'Behanglijm',en:'Wallpaper paste',unit:'kg',cov:0.05,pack:0.5,packPl:'opak. 0,5 kg',packEn:'0.5 kg pack',packNl:'pak 0,5 kg',layers:1},
+ {cat:'ŚcianyDekor',pl:'Tynk dekoracyjny strukturalny',nl:'Structuur sierpleister',en:'Decorative textured plaster',unit:'kg',cov:2.5,pack:25,packPl:'wiadro 25 kg',packEn:'25 kg tub',packNl:'emmer 25 kg',layers:1},
+ {cat:'ŚcianyDekor',pl:'Mikrocement (zestaw)',nl:'Microcement (set)',en:'Microcement (kit)',unit:'kg',cov:1.6,pack:20,packPl:'zestaw 20 kg',packEn:'20 kg kit',packNl:'set 20 kg',layers:2},
+ {cat:'ŚcianyDekor',pl:'Płyta betonu architektonicznego',nl:'Betonlookpaneel',en:'Architectural concrete panel',unit:'m²',cov:1,pack:0.72,packPl:'płyta 0,72 m²',packEn:'0.72 m² panel',packNl:'paneel 0,72 m²',layers:1,waste:true},
+ {cat:'ŚcianyDekor',pl:'Lamele ścienne (panel 275 cm)',nl:'Wandlamellen (paneel 275 cm)',en:'Wall slat panel (275 cm)',unit:'m²',cov:1,pack:0.83,packPl:'panel 0,83 m²',packEn:'0.83 m² panel',packNl:'paneel 0,83 m²',layers:1,waste:true},
+ {cat:'ŚcianyDekor',pl:'Klej montażowy do lameli',nl:'Montagelijm voor lamellen',en:'Grab adhesive for slats',unit:'szt',unitEn:'pcs',cov:0.35,pack:1,packPl:'kartusz 290 ml',packEn:'290 ml cartridge',packNl:'koker 290 ml',layers:1},
+ // SUFITY
+ {cat:'Sufity',pl:'Profil sufitowy CD/UD',nl:'Plafondprofiel CD/UD',en:'Ceiling profile CD/UD',unit:'mb',unitEn:'lm',cov:3.4,pack:4,packPl:'profil 4 mb',packEn:'4 lm profile',packNl:'profiel 4 lm',layers:1},
+ {cat:'Sufity',pl:'Wieszak ES + łącznik',nl:'Plafondhanger + koppelstuk',en:'Ceiling hanger + connector',unit:'szt',unitEn:'pcs',cov:1.7,pack:100,packPl:'opak. 100 szt',packEn:'100 pcs pack',packNl:'pak 100 st.',layers:1},
+ {cat:'Sufity',pl:'Płyta g-k sufitowa',nl:'Plafondgipsplaat',en:'Ceiling plasterboard',unit:'m²',cov:1,pack:3.12,packPl:'płyta 3,12 m²',packEn:'3.12 m² board',packNl:'plaat 3,12 m²',layers:1,waste:true},
+ {cat:'Sufity',pl:'Sufit napinany PVC (z montażem)',nl:'Spanplafond pvc (incl. montage)',en:'Stretch ceiling PVC (fitted)',unit:'m²',cov:1,pack:1,packPl:'m²',packEn:'m²',packNl:'m²',layers:1},
+ {cat:'Sufity',pl:'Listwa przysufitowa',nl:'Plafondlijst',en:'Coving / cornice',unit:'mb',unitEn:'lm',cov:1,pack:2,packPl:'listwa 2 mb',packEn:'2 lm length',packNl:'lengte 2 lm',layers:1,perMb:true},
+ {cat:'Sufity',pl:'Klej do sztukaterii',nl:'Lijm voor sierlijsten',en:'Coving adhesive',unit:'szt',unitEn:'pcs',cov:0.1,pack:1,packPl:'kartusz 310 ml',packEn:'310 ml cartridge',packNl:'koker 310 ml',layers:1,perMb:true},
+ // ŁAZIENKA
+ {cat:'Łazienka',pl:'Płytki wielkoformatowe',nl:'Grootformaat tegels',en:'Large-format tiles',unit:'m²',cov:1,pack:1.44,packPl:'karton 1,44 m²',packEn:'1.44 m² box',packNl:'doos 1,44 m²',layers:1,waste:true},
+ {cat:'Łazienka',pl:'Klej elastyczny C2TE S1',nl:'Flexibele lijm C2TE S1',en:'Flexible adhesive C2TE S1',unit:'kg',cov:5.5,pack:25,packPl:'worek 25 kg',packEn:'25 kg bag',packNl:'zak 25 kg',layers:1},
+ {cat:'Łazienka',pl:'Taśma uszczelniająca do naroży',nl:'Kimband voor hoeken',en:'Sealing tape for corners',unit:'mb',unitEn:'lm',cov:1,pack:10,packPl:'rolka 10 mb',packEn:'10 lm roll',packNl:'rol 10 lm',layers:1,perMb:true},
+ {cat:'Łazienka',pl:'Rura PP wod. + kształtki',nl:'Pp-waterleiding + fittingen',en:'PP water pipe + fittings',unit:'mb',unitEn:'lm',cov:0.8,pack:4,packPl:'odcinek 4 mb',packEn:'4 lm length',packNl:'lengte 4 lm',layers:1,perMb:true},
+ {cat:'Łazienka',pl:'Rura kanalizacyjna 50/110',nl:'Afvoerbuis 50/110',en:'Waste pipe 50/110',unit:'mb',unitEn:'lm',cov:0.5,pack:2,packPl:'odcinek 2 mb',packEn:'2 lm length',packNl:'lengte 2 lm',layers:1,perMb:true},
+ {cat:'Łazienka',pl:'Stelaż podtynkowy WC',nl:'Inbouwreservoir wc',en:'Concealed WC frame',unit:'szt',unitEn:'pcs',cov:0.15,pack:1,packPl:'komplet',packEn:'set',packNl:'set',layers:1},
+ {cat:'Łazienka',pl:'Odpływ liniowy + izolacja',nl:'Lijnafvoer + afdichtset',en:'Linear drain + seal kit',unit:'szt',unitEn:'pcs',cov:0.1,pack:1,packPl:'komplet',packEn:'set',packNl:'set',layers:1},
+ // ELEKTRYKA
+ {cat:'Elektryka',pl:'Przewód YDYp 3×1,5',nl:'Kabel 3×1,5 mm²',en:'Cable 3×1.5 mm²',unit:'mb',unitEn:'lm',cov:3.5,pack:100,packPl:'krążek 100 mb',packEn:'100 lm coil',packNl:'rol 100 lm',layers:1},
+ {cat:'Elektryka',pl:'Przewód YDYp 3×2,5',nl:'Kabel 3×2,5 mm²',en:'Cable 3×2.5 mm²',unit:'mb',unitEn:'lm',cov:2.5,pack:100,packPl:'krążek 100 mb',packEn:'100 lm coil',packNl:'rol 100 lm',layers:1},
+ {cat:'Elektryka',pl:'Puszka podtynkowa',nl:'Inbouwdoos',en:'Back box',unit:'szt',unitEn:'pcs',cov:0.6,pack:50,packPl:'opak. 50 szt',packEn:'50 pcs pack',packNl:'pak 50 st.',layers:1},
+ {cat:'Elektryka',pl:'Gniazdko / włącznik (ramka)',nl:'Stopcontact / schakelaar',en:'Socket / switch (with frame)',unit:'szt',unitEn:'pcs',cov:0.5,pack:1,packPl:'sztuka',packEn:'piece',packNl:'stuk',layers:1},
+ {cat:'Elektryka',pl:'Peszel osłonowy',nl:'Flexibele buis',en:'Flexible conduit',unit:'mb',unitEn:'lm',cov:2,pack:50,packPl:'zwój 50 mb',packEn:'50 lm coil',packNl:'rol 50 lm',layers:1},
+ {cat:'Elektryka',pl:'Taśma LED + zasilacz',nl:'Ledstrip + driver',en:'LED strip + driver',unit:'mb',unitEn:'lm',cov:1,pack:5,packPl:'rolka 5 mb',packEn:'5 lm reel',packNl:'rol 5 lm',layers:1,perMb:true},
+ {cat:'Elektryka',pl:'Oprawa podtynkowa (downlight)',nl:'Inbouwspot',en:'Recessed downlight',unit:'szt',unitEn:'pcs',cov:0.25,pack:1,packPl:'sztuka',packEn:'piece',packNl:'stuk',layers:1},
+ // OGRZEWANIE
+ {cat:'Ogrzewanie',pl:'Mata grzewcza elektryczna',nl:'Elektrische vloerverwarmingsmat',en:'Electric underfloor mat',unit:'m²',cov:0.85,pack:1,packPl:'m² maty',packEn:'m² of mat',packNl:'m² mat',layers:1},
+ {cat:'Ogrzewanie',pl:'Rura PEX do ogrz. podłogowego',nl:'Pex-buis vloerverwarming',en:'PEX underfloor pipe',unit:'mb',unitEn:'lm',cov:6.7,pack:200,packPl:'krążek 200 mb',packEn:'200 lm coil',packNl:'rol 200 lm',layers:1},
+ {cat:'Ogrzewanie',pl:'Płyta systemowa z wypustkami',nl:'Noppenplaat',en:'Castellated system panel',unit:'m²',cov:1.05,pack:1,packPl:'m² płyty',packEn:'m² of panel',packNl:'m² plaat',layers:1},
+ {cat:'Ogrzewanie',pl:'Termostat pokojowy',nl:'Kamerthermostaat',en:'Room thermostat',unit:'szt',unitEn:'pcs',cov:0.05,pack:1,packPl:'sztuka',packEn:'piece',packNl:'stuk',layers:1},
+ {cat:'Ogrzewanie',pl:'Taśma brzegowa dylatacyjna',nl:'Randisolatiestrook',en:'Perimeter edge strip',unit:'mb',unitEn:'lm',cov:1,pack:25,packPl:'rolka 25 mb',packEn:'25 lm roll',packNl:'rol 25 lm',layers:1,perMb:true},
+ // PODŁOGI — uzupełnienie
+ {cat:'Podłogi',pl:'Winyl LVT / SPC',nl:'Vinyl LVT / SPC',en:'LVT / SPC vinyl',unit:'m²',cov:1,pack:2.2,packPl:'paczka 2,2 m²',packEn:'2.2 m² pack',packNl:'pak 2,2 m²',layers:1,waste:true},
+ {cat:'Podłogi',pl:'Deska warstwowa / parkiet',nl:'Meerlaags parket',en:'Engineered wood / parquet',unit:'m²',cov:1,pack:1.8,packPl:'paczka 1,8 m²',packEn:'1.8 m² pack',packNl:'pak 1,8 m²',layers:1,waste:true},
+ {cat:'Podłogi',pl:'Wykładzina dywanowa / PVC',nl:'Tapijt / pvc-vloer',en:'Carpet / PVC flooring',unit:'m²',cov:1,pack:1,packPl:'m² z rolki',packEn:'m² from roll',packNl:'m² van rol',layers:1,waste:true},
+ {cat:'Podłogi',pl:'Wylewka anhydrytowa (3 cm)',nl:'Anhydriet dekvloer (3 cm)',en:'Anhydrite screed (3 cm)',unit:'kg',cov:60,pack:25,packPl:'worek 25 kg',packEn:'25 kg bag',packNl:'zak 25 kg',layers:1},
+ {cat:'Podłogi',pl:'Lakier do parkietu',nl:'Parketlak',en:'Floor lacquer',unit:'l',cov:0.1,pack:5,packPl:'kanister 5 l',packEn:'5 l can',packNl:'jerrycan 5 l',layers:3},
+ {cat:'Podłogi',pl:'Żywica epoksydowa posadzkowa',nl:'Epoxy gietvloerhars',en:'Epoxy floor resin',unit:'kg',cov:1.5,pack:10,packPl:'zestaw 10 kg',packEn:'10 kg kit',packNl:'set 10 kg',layers:1},
+ {cat:'Podłogi',pl:'Klej do wykładzin',nl:'Vloerbedekkingslijm',en:'Flooring adhesive',unit:'kg',cov:0.35,pack:14,packPl:'wiadro 14 kg',packEn:'14 kg tub',packNl:'emmer 14 kg',layers:1},
+ // ZEWNĘTRZNE
+ {cat:'Zewnętrzne',pl:'Tynk silikonowy elewacyjny',nl:'Siliconenpleister gevel',en:'Silicone render',unit:'kg',cov:2.8,pack:25,packPl:'wiadro 25 kg',packEn:'25 kg tub',packNl:'emmer 25 kg',layers:1},
+ {cat:'Zewnętrzne',pl:'Grunt pod tynk elewacyjny',nl:'Voorstrijk voor gevelpleister',en:'Render primer',unit:'l',cov:0.2,pack:10,packPl:'wiadro 10 l',packEn:'10 l tub',packNl:'emmer 10 l',layers:1},
+ {cat:'Zewnętrzne',pl:'Płytki tarasowe mrozoodporne',nl:'Vorstbestendige terrastegels',en:'Frost-proof patio tiles',unit:'m²',cov:1,pack:1.2,packPl:'karton 1,2 m²',packEn:'1.2 m² box',packNl:'doos 1,2 m²',layers:1,waste:true},
+ {cat:'Zewnętrzne',pl:'Izolacja tarasu (mata drenażowa)',nl:'Drainagemat terras',en:'Terrace drainage mat',unit:'m²',cov:1.1,pack:12,packPl:'rolka 12 m²',packEn:'12 m² roll',packNl:'rol 12 m²',layers:1},
+ {cat:'Zewnętrzne',pl:'Kostka brukowa (6 cm)',nl:'Betonklinkers (6 cm)',en:'Paving blocks (6 cm)',unit:'m²',cov:1,pack:1,packPl:'m² kostki',packEn:'m² of paving',packNl:'m² bestrating',layers:1,waste:true},
+ {cat:'Zewnętrzne',pl:'Podsypka cementowo-piaskowa',nl:'Zand-cement straatlaag',en:'Sand-cement bedding',unit:'kg',cov:70,pack:1000,packPl:'big bag 1 t',packEn:'1 t bulk bag',packNl:'bigbag 1 t',layers:1},
+ {cat:'Zewnętrzne',pl:'Obrzeże betonowe',nl:'Betonnen opsluitband',en:'Concrete edging',unit:'mb',unitEn:'lm',cov:1,pack:1,packPl:'element 1 mb',packEn:'1 lm unit',packNl:'element 1 lm',layers:1,perMb:true},
+ {cat:'Zewnętrzne',pl:'Panel ogrodzeniowy + słupek',nl:'Schuttingpaneel + paal',en:'Fence panel + post',unit:'mb',unitEn:'lm',cov:1,pack:2.5,packPl:'panel 2,5 mb',packEn:'2.5 lm panel',packNl:'paneel 2,5 lm',layers:1,perMb:true},
+];
+
+/* ==================== STAN ==================== */
+let lang = (()=>{ const l=(navigator.language||'en').toLowerCase();
+  if(l.startsWith('pl'))return 'pl';
+  if(l.startsWith('nl'))return 'nl';   // holenderski i flamandzki (nl-BE)
+  return 'en'; })();
+let T = I18N[lang];
+let settings={ defRef:'21', waste:10, imperial:false, roundPacks:true, webSearch:true, useGps:true, defStd:1, market:'auto' };
+let lastCoords=null, detectedMarket=null;
+let state={refCm:21,pxPerCm:null,mode:'calibrate',calibPoints:[],mainPoints:[],openings:[],currentOpeningPoints:[],savedMeasurements:[]};
+
+/* ==================== NAWIGACJA ==================== */
+const tabBtns=document.querySelectorAll('.tab-btn');
+const views={pomiar:document.getElementById('view-pomiar'),kalkulator:document.getElementById('view-kalkulator'),ai:document.getElementById('view-ai'),ceny:document.getElementById('view-ceny'),ustawienia:document.getElementById('view-ustawienia')};
+tabBtns.forEach(b=>b.addEventListener('click',()=>{
+  tabBtns.forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  Object.values(views).forEach(v=>v.classList.remove('active')); views[b.dataset.view].classList.add('active');
+  if(b.dataset.view==='kalkulator') renderChips();
+  if(b.dataset.view==='ustawienia') refreshSettingsView();
+}));
+
+/* ==================== APLIKOWANIE JĘZYKA ==================== */
+const $=id=>document.getElementById(id);
+function setTxt(id,v){const e=$(id); if(e)e.textContent=v;}
+function setPh(id,v){const e=$(id); if(e)e.placeholder=v;}
+
+function applyLanguage(){
+  T=I18N[lang];
+  document.documentElement.lang=lang;
+  setTxt('hdrTag',T.hdrTag);
+  Object.keys(T.tabs).forEach(k=>{const e=document.querySelector('.tl-'+k); if(e)e.textContent=T.tabs[k];});
+
+  setTxt('t_calibTitle',T.calibTitle);
+  ['howStep1','howStep1d','howStep2','howStep2d','howStep3','howStep3d','stepBar1','stepBar2','stepBar3']
+    .forEach(k=>setTxt('t_'+k,T[k]));
+  setTxt('startCamBtn',T.howReady);
+  setTxt('t_refLabel',T.refLabel); setTxt('t_customRefLabel',T.customRefLabel);
+  setPh('customRefCm',T.customRefPh);
+  fillRefSelect($('refSelect'),settings.defRef); fillRefSelect($('defRefSelect'),settings.defRef);
+  setTxt('undoBtn',T.undo); setTxt('saveBtn',T.save);
+  $('openingBtn').textContent = state.mode==='opening'?T.closeOpening:T.addOpening;
+
+  setTxt('t_calcTitle',T.calcTitle); setTxt('t_calcSub',T.calcSub);
+  setTxt('t_savedLabel',T.savedLabel); setTxt('chipEmpty',T.chipEmpty);
+  setTxt('t_areaLabel',T.areaLabel+' ('+(settings.imperial?T.sqft:T.m2)+')'); setPh('calcArea',T.areaPh);
+
+  setTxt('t_aiTitle',T.aiTitle); setTxt('t_aiSub',T.aiSub);
+  setTxt('t_taskLabel',T.taskLabel); setPh('aiTaskInput',T.taskPh);
+  setTxt('t_aiAreaLabel',T.aiAreaLabel); setTxt('t_stdLabel',T.stdLabel);
+  setTxt('aiAnalyzeBtn',T.analyze);
+  $('aiStandard').innerHTML=T.stds.map((s,i)=>`<option ${i===settings.defStd?'selected':''}>${s}</option>`).join('');
+  $('defStdSelect').innerHTML=T.stds.map((s,i)=>`<option ${i===settings.defStd?'selected':''}>${s}</option>`).join('');
+  $('quickAdd').innerHTML=T.quick.map(q=>`<button data-q="${q[1]}">${q[0]}</button>`).join('');
+  $('quickAdd').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    $('aiTaskInput').value=b.dataset.q; $('aiTaskInput').focus();
+  }));
+
+  setTxt('t_priceTitle',T.priceTitle); setTxt('t_priceSub',T.priceSub);
+  setTxt('t_queryLabel',T.queryLabel); setPh('priceQuery',T.queryPh);
+  setTxt('t_cityLabel',T.cityLabel); setPh('priceCity',T.cityPh);
+  setTxt('priceSearchBtn',T.priceSearch); setTxt('locateBtn',T.locateBtn);
+  $('t_priceNotice').innerHTML=T.priceNotice;
+
+  setTxt('t_costTitle',T.costTitle); setTxt('t_costSub',T.costSub);
+  setTxt('t_costJobLabel',T.costJobLabel); setTxt('t_costCustomLabel',T.costCustomLabel);
+  setTxt('t_costAreaLabel',T.costAreaLabel+' ('+(settings.imperial?T.sqft:T.m2)+')');
+  setTxt('t_costLabourLabel',T.costLabourLabel); setTxt('t_costRegionLabel',T.costRegionLabel);
+  setPh('costRegion',T.costRegionPh); setTxt('costBtn',T.costBtn);
+  $('costJob').innerHTML=T.jobs.map(g=>
+    `<optgroup label="${g[0]}">`+g[1].map(j=>`<option value="${j[0]}">${j[1]}</option>`).join('')+`</optgroup>`).join('');
+  $('costLabour').innerHTML=`<option value="hire">${T.costLabourHire}</option><option value="self">${T.costLabourSelf}</option>`;
+  ['demoStripAi','demoStripCeny'].forEach(id=>{const e=$(id); if(e){e.textContent=T.demoHint; e.style.display=DEMO_MODE?'block':'none';}});
+  setTxt('t_proTitle',T.proTitle); setTxt('t_proSub',T.proSub);
+  setTxt('t_proTradeLabel',T.proTradeLabel); setPh('proTrade',T.proTradePh);
+  setTxt('t_proAreaLabel',T.proAreaLabel); setPh('proArea',T.costRegionPh);
+  setTxt('proBtn',T.proBtn);
+  renderCostChips();
+
+  setTxt('t_setTitle',T.setTitle); setTxt('t_setSub',T.setSub);
+  setTxt('t_langGroup',T.langGroup); setTxt('t_langNote',T.langNote);
+  setTxt('t_measGroup',T.measGroup); setTxt('t_defRefLabel',T.defRefLabel); setTxt('t_wasteLabel',T.wasteLabel);
+  setTxt('t_unitsTitle',T.unitsTitle); setTxt('t_unitsDesc',T.unitsDesc);
+  setTxt('t_roundTitle',T.roundTitle); setTxt('t_roundDesc',T.roundDesc);
+  setTxt('t_aiGroup',T.aiGroup); setTxt('t_searchTitle',T.searchTitle); setTxt('t_searchDesc',T.searchDesc);
+  setTxt('t_gpsTitle',T.gpsTitle); setTxt('t_gpsDesc',T.gpsDesc); setTxt('t_defStdLabel',T.defStdLabel);
+  setTxt('t_dataGroup',T.dataGroup); setTxt('t_savedCountDesc',T.savedCountDesc); setTxt('clearBtn',T.clearBtn);
+  setTxt('t_aboutGroup',T.aboutGroup); setTxt('t_aboutText',T.aboutText);
+  setTxt('t_marketGroup',T.marketGroup); setTxt('t_marketLabel',T.marketLabel); setTxt('t_marketNote',T.marketNote);
+  $('marketSelect').innerHTML=`<option value="auto">${T.marketAutoLabel}</option>`+
+    MARKETS.slice().sort((a,b)=>(lang==='pl'?a.pl:a.en).localeCompare(lang==='pl'?b.pl:b.en))
+      .map(m=>`<option value="${m.c}">${lang==='pl'?m.pl:m.en} (${m.cur})</option>`).join('');
+  $('marketSelect').value=settings.market;
+  updateMarketStatus();
+  $('langPl').classList.toggle('active',lang==='pl');
+  $('langEn').classList.toggle('active',lang==='en');
+  $('langNl').classList.toggle('active',lang==='nl');
+
+  buildCats(); buildCards(); renderChips(); updateUI(); refreshSettingsView();
+}
+function fillRefSelect(sel,val){
+  if(!sel)return;
+  sel.innerHTML=T.refs.map(r=>`<option value="${r[0]}" ${r[0]===val?'selected':''}>${r[1]}</option>`).join('');
+}
+
+/* ==================== USTAWIENIA ==================== */
+document.querySelectorAll('.lang-switch button').forEach(b=>b.addEventListener('click',()=>{
+  lang=b.dataset.lang; applyLanguage();
+}));
+$('marketSelect').addEventListener('change',e=>{settings.market=e.target.value; updateMarketStatus();});
+function activeMarket(){
+  if(settings.market!=='auto')return marketByCode(settings.market);
+  return detectedMarket||null;
+}
+function updateMarketStatus(){
+  const el=$('t_marketStatus'); if(!el)return;
+  if(settings.market!=='auto'){ el.textContent=''; return; }
+  const m=detectedMarket;
+  el.textContent = m ? T.marketDetected((lang==='pl'?m.pl:m.en)+' · '+m.cur) : T.marketNoGps;
+}
+/* fragment promptu opisujacy rynek — wspolny dla wszystkich zapytan AI */
+function marketPrompt(){
+  // 1) rynek wybrany ręcznie — wiążący
+  if(settings.market!=='auto'){
+    const m=marketByCode(settings.market);
+    if(m)return lang==='pl'
+      ? `RYNEK: ${m.pl}. Szukaj cen w tamtejszych sklepach (np. ${m.shops}). Wszystkie kwoty w walucie ${m.cur}; ustaw "waluta":"${m.cur}".`
+      : `MARKET: ${m.en}. Search prices at local retailers (e.g. ${m.shops}). All amounts in ${m.cur}; set "waluta":"${m.cur}".`;
+  }
+  // 2) tryb automatyczny ze współrzędnymi — AI sam ustala kraj, podpowiedź jest tylko wskazówką
+  if(lastCoords){
+    const g=detectedMarket;
+    return lang==='pl'
+      ? `RYNEK: ustal kraj na podstawie współrzędnych ${lastCoords.la}, ${lastCoords.ln}${g?` (prawdopodobnie ${g.pl} — ZWERYFIKUJ, współrzędne są ważniejsze niż ta podpowiedź)`:''}. Szukaj cen w sklepach budowlanych działających w TYM kraju, użyj jego waluty i wpisz ją w "waluta".`
+      : `MARKET: determine the country from coordinates ${lastCoords.la}, ${lastCoords.ln}${g?` (likely ${g.en} — VERIFY, the coordinates outrank this hint)`:''}. Search retailers operating in THAT country, use its currency and put it in "waluta".`;
+  }
+  // 3) brak lokalizacji — kraj wg języka interfejsu
+  const f=lang==='pl'?marketByCode('PL'):marketByCode('GB');
+  return lang==='pl'
+    ? `RYNEK: nie podano lokalizacji — przyjmij ${f.pl} i ustaw "waluta":"${f.cur}". Zaznacz w "zrodla", że przyjęto rynek domyślny.`
+    : `MARKET: no location given — assume ${f.en} and set "waluta":"${f.cur}". Note in "zrodla" that a default market was assumed.`;
+}
+$('defRefSelect').addEventListener('change',e=>{
+  settings.defRef=e.target.value; fillRefSelect($('refSelect'),settings.defRef);
+});
+$('wasteInput').addEventListener('input',e=>{settings.waste=parseFloat(e.target.value)||0; recalcAll();});
+$('unitsToggle').addEventListener('change',e=>{settings.imperial=e.target.checked; applyLanguage(); recalcAll(); updateUI();});
+$('roundToggle').addEventListener('change',e=>{settings.roundPacks=e.target.checked; recalcAll();});
+$('searchToggle').addEventListener('change',e=>{settings.webSearch=e.target.checked;});
+$('gpsToggle').addEventListener('change',e=>{settings.useGps=e.target.checked;});
+$('defStdSelect').addEventListener('change',e=>{settings.defStd=e.target.selectedIndex; $('aiStandard').selectedIndex=settings.defStd;});
+$('clearBtn').addEventListener('click',()=>{
+  if(confirm(T.clearConfirm)){state.savedMeasurements=[]; renderChips(); renderCostChips(); refreshSettingsView();}
+});
+function refreshSettingsView(){
+  setTxt('t_savedCount',T.savedCount(state.savedMeasurements.length));
+  $('marketSelect').value=settings.market; updateMarketStatus();
+  $('wasteInput').value=settings.waste;
+  $('unitsToggle').checked=settings.imperial;
+  $('roundToggle').checked=settings.roundPacks;
+  $('searchToggle').checked=settings.webSearch;
+  $('gpsToggle').checked=settings.useGps;
+}
+
+/* ==================== KAMERA / POMIAR ==================== */
+const refSelect=$('refSelect'),customRefField=$('customRefField'),customRefCm=$('customRefCm');
+refSelect.addEventListener('change',()=>customRefField.style.display=refSelect.value==='custom'?'block':'none');
+const video=$('video'),overlay=$('overlay'),ctx=overlay.getContext('2d');
+const camWrap=$('camWrap'),setupPanel=$('setupPanel');
+const stepPill=$('stepPill'),calibPill=$('calibPill');
+const mainReadout=$('mainReadout'),subReadout=$('subReadout');
+const undoBtn=$('undoBtn'),openingBtn=$('openingBtn'),saveBtn=$('saveBtn');
+
+$('startCamBtn').addEventListener('click',async()=>{
+  state.refCm=refSelect.value==='custom'?(parseFloat(customRefCm.value)||150):parseFloat(refSelect.value);
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=s; await video.play();
+    setupPanel.style.display='none'; camWrap.style.display='block';
+    resizeCanvas(); window.addEventListener('resize',resizeCanvas); draw();
+  }catch(e){
+    setupPanel.querySelector('.setup-panel').innerHTML=
+      `<div style="padding-top:20px;"><p class="hint" style="color:#D9A441;">${T.camErr(e.name)}</p>
+       <button class="btn btn-ghost" onclick="location.reload()">${T.retry}</button></div>`;
+  }
+});
+function resizeCanvas(){overlay.width=overlay.clientWidth;overlay.height=overlay.clientHeight;draw();}
+/* aktywna lista punktów zależy od etapu */
+function activePoints(){
+  if(state.mode==='calibrate')return state.calibPoints;
+  if(state.mode==='opening')return state.currentOpeningPoints;
+  return state.mainPoints;
+}
+function addPointAt(x,y){
+  if(state.mode==='calibrate'){
+    if(state.calibPoints.length<2)state.calibPoints.push({x,y});
+    if(state.calibPoints.length===2)finishCalib();
+  } else activePoints().push({x,y});
+  updateUI(); draw();
+}
+/* przycisk: punkt ląduje dokładnie pod krzyżykiem na środku ekranu */
+$('addPointBtn').addEventListener('click',()=>{
+  addPointAt(overlay.width/2, overlay.height/2);
+  const c=$('crosshair'); c.classList.add('pulse'); setTimeout(()=>c.classList.remove('pulse'),140);
+  if(navigator.vibrate)navigator.vibrate(18);
+});
+
+/* dotyk: blisko istniejącego punktu = przeciąganie, dalej = nowy punkt */
+let dragIdx=null;
+const HIT=26; // promień trafienia w px
+overlay.addEventListener('pointerdown',e=>{
+  const r=overlay.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const pts=activePoints();
+  let best=-1,bestD=HIT;
+  pts.forEach((pt,i)=>{const d=Math.hypot(pt.x-x,pt.y-y); if(d<bestD){bestD=d;best=i;}});
+  if(best>=0){ dragIdx=best; overlay.setPointerCapture(e.pointerId); return; }
+  addPointAt(x,y);
+});
+overlay.addEventListener('pointermove',e=>{
+  if(dragIdx===null)return;
+  const r=overlay.getBoundingClientRect();
+  const pts=activePoints();
+  pts[dragIdx]={x:e.clientX-r.left, y:e.clientY-r.top};
+  if(state.mode==='calibrate'&&state.calibPoints.length===2)finishCalib();
+  updateUI(); draw();
+});
+overlay.addEventListener('pointerup',()=>{dragIdx=null;});
+overlay.addEventListener('pointercancel',()=>{dragIdx=null;});
+undoBtn.addEventListener('click',()=>{
+  if(state.mode==='calibrate')state.calibPoints.pop();
+  else if(state.mode==='measure')state.mainPoints.pop();
+  else state.currentOpeningPoints.pop();
+  updateUI(); draw();
+});
+openingBtn.addEventListener('click',()=>{
+  if(state.mode==='opening'){
+    if(state.currentOpeningPoints.length>=3)state.openings.push({points:state.currentOpeningPoints});
+    state.currentOpeningPoints=[]; state.mode='measure'; openingBtn.textContent=T.addOpening;
+  }else{state.mode='opening'; state.currentOpeningPoints=[]; openingBtn.textContent=T.closeOpening;}
+  updateUI(); draw();
+});
+saveBtn.addEventListener('click',()=>{
+  const a=computeNetAreaM2(); if(a<=0)return;
+  const n=prompt(T.savePrompt,T.surfaceN(state.savedMeasurements.length+1));
+  if(n===null)return;
+  state.savedMeasurements.push({id:Date.now(),name:n||T.surfaceN(state.savedMeasurements.length+1),area:a,perimeter:computePerimeterM(state.mainPoints)});
+  state.mainPoints=[];state.openings=[];state.mode='measure';
+  updateUI(); draw(); renderChips(); renderCostChips(); refreshSettingsView();
+});
+function finishCalib(){
+  const [a,b]=state.calibPoints;
+  state.pxPerCm=Math.hypot(b.x-a.x,b.y-a.y)/state.refCm; state.mode='measure';
+  calibPill.innerHTML=T.scale+': <b>'+state.pxPerCm.toFixed(1)+' px/cm</b>';
+}
+const M2_TO_FT2=10.7639;
+function dispArea(m2){return settings.imperial?m2*M2_TO_FT2:m2;}
+function dispLen(m){return settings.imperial?m*3.28084:m;}
+function areaUnit(){return settings.imperial?T.sqft:T.m2;}
+function lenUnit(){return settings.imperial?'ft':'m';}
+
+function setStepBar(active,done){
+  document.querySelectorAll('.sb-item').forEach(el=>{
+    const i=+el.dataset.i;
+    el.classList.toggle('active',i===active);
+    el.classList.toggle('done',i<active||(done&&i===active));
+  });
+}
+function updateUI(){
+  const n=state.mainPoints.length;
+  if(state.mode==='calibrate'){
+    stepPill.textContent=(state.calibPoints.length===0?T.step1:T.step2)+' · '+T.aimHint;
+    openingBtn.disabled=true; saveBtn.disabled=true;
+    if(!state.pxPerCm)calibPill.innerHTML=T.scale+': <b>—</b>';
+    setStepBar(1,false);
+  }else{
+    stepPill.textContent=n<3?T.stepPoly(n):(state.mode==='opening'?T.stepOpen(state.currentOpeningPoints.length):T.stepReady+' · '+T.dragHint);
+    openingBtn.disabled=n<3; saveBtn.disabled=n<3;
+    setStepBar(n>=3?3:2, n>=3);
+  }
+  const ch=$('crosshair');
+  if(ch)ch.classList.toggle('hidden', n>=3&&state.mode==='measure');
+  const btn=$('addPointBtn');
+  if(btn){
+    btn.textContent=T.addPoint;
+    // po zamknięciu obrysu przycisk mniej rzuca się w oczy
+    btn.className='btn btn-full '+(n>=3&&state.mode==='measure'?'btn-ghost':'btn-primary');
+    btn.style.cssText='margin-top:12px;padding:'+(n>=3&&state.mode==='measure'?'12px':'16px')+';font-size:'+(n>=3&&state.mode==='measure'?'13.5px':'15px')+';';
+  }
+  const a=computeNetAreaM2(),p=computePerimeterM(state.mainPoints);
+  mainReadout.innerHTML=dispArea(a).toFixed(2)+' <small>'+areaUnit()+'</small>';
+  subReadout.textContent=T.perim+': '+(p?dispLen(p).toFixed(2)+' '+lenUnit():'—')+' · '+T.points+': '+state.mainPoints.length+(state.openings.length?' · '+T.openings+': '+state.openings.length:'');
+}
+function shoelace(p){if(p.length<3)return 0;let s=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];s+=a.x*b.y-b.x*a.y;}return Math.abs(s)/2;}
+function perimPx(p){if(p.length<3)return 0;let s=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];s+=Math.hypot(b.x-a.x,b.y-a.y);}return s;}
+function computeNetAreaM2(){
+  if(!state.pxPerCm||state.mainPoints.length<3)return 0;
+  const c=x=>x/(state.pxPerCm*state.pxPerCm)/10000;
+  let a=c(shoelace(state.mainPoints));
+  state.openings.forEach(o=>a-=c(shoelace(o.points)));
+  return Math.max(a,0);
+}
+function computePerimeterM(p){return(!state.pxPerCm||p.length<3)?0:perimPx(p)/state.pxPerCm/100;}
+function draw(){
+  ctx.clearRect(0,0,overlay.width,overlay.height);
+  const poly=(pts,col,fill,close)=>{
+    if(!pts.length)return;
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();
+    pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+    if(close&&pts.length>2)ctx.closePath();
+    ctx.stroke();ctx.setLineDash([]);
+    if(close&&pts.length>2&&fill){ctx.fillStyle=col.replace('1)',fill+')');ctx.fill();}
+    pts.forEach((p,i)=>{
+      // obwódka ułatwia trafienie palcem i pokazuje, że punkt da się przeciągnąć
+      ctx.beginPath();ctx.arc(p.x,p.y,13,0,7);
+      ctx.fillStyle=col.replace('1)','0.18)');ctx.fill();
+      ctx.beginPath();ctx.arc(p.x,p.y,7,0,7);
+      ctx.fillStyle=col;ctx.fill();
+      ctx.strokeStyle='#1B1A17';ctx.lineWidth=2;ctx.stroke();
+      // numer punktu
+      ctx.fillStyle='#1B1A17';ctx.font='bold 9px Barlow, sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(String(i+1),p.x,p.y);
+    });
+  };
+  if(state.mode==='calibrate')poly(state.calibPoints,'rgba(76,111,165,1)',null,false);
+  else{
+    poly(state.mainPoints,'rgba(232,93,47,1)',0.14,state.mainPoints.length>2);
+    state.openings.forEach(o=>poly(o.points,'rgba(217,164,65,1)',0.18,true));
+    if(state.mode==='opening')poly(state.currentOpeningPoints,'rgba(217,164,65,1)',0.1,state.currentOpeningPoints.length>2);
+  }
+}
+
+/* ==================== KALKULATOR ==================== */
+let activeCat='Malowanie';
+const catScroll=$('catScroll'),materialCardsEl=$('materialCards');
+function matName(m){return lang==='en'?m.en:(lang==='nl'?(m.nl||m.en):m.pl);}
+function matPack(m){return lang==='en'?m.packEn:(lang==='nl'?(m.packNl||m.packEn):m.packPl);}
+function matUnit(m){return (lang!=='pl'&&m.unitEn)?m.unitEn:m.unit;}
+const CAT_ORDER=['Malowanie','ŚcianyDekor','Tynki','Regipsy','Sufity','Płytki','Łazienka','Podłogi','Ogrzewanie','Elektryka','Chemia','Izolacja','Dach','Zewnętrzne'];
+function buildCats(){
+  const present=[...new Set(MATERIALS.map(m=>m.cat))];
+  const cats=CAT_ORDER.filter(c=>present.includes(c)).concat(present.filter(c=>!CAT_ORDER.includes(c)));
+  catScroll.innerHTML=cats.map(c=>`<button class="cat-btn ${c===activeCat?'active':''}" data-cat="${c}">${T.cats[c]}</button>`).join('');
+  catScroll.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
+    activeCat=b.dataset.cat;
+    catScroll.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); buildCards();
+  }));
+}
+function buildCards(){
+  materialCardsEl.innerHTML=MATERIALS.filter(m=>m.cat===activeCat).map(m=>{
+    const i=MATERIALS.indexOf(m), u=matUnit(m);
+    const per=m.perMb?(lang==='pl'?'mb':'lm'):areaUnit();
+    return `<div class="card" data-idx="${i}">
+      <div class="card-head"><div class="name">${matName(m)}</div><div class="eyebrow">${u}/${per}</div></div>
+      <div class="row2">
+        <div><label class="field-label">${T.coverage}</label><input type="number" step="0.01" class="cov-input" value="${m.cov}"></div>
+        <div><label class="field-label">${T.layers}</label><input type="number" step="1" min="1" class="layers-input" value="${m.layers}"></div>
+      </div>
+      <div class="result-line"><span class="lbl">${T.need}</span><span class="num out-qty">—</span></div>
+      <div class="result-line" style="border-top:none;margin-top:1px;padding-top:1px;"><span class="lbl">${matPack(m)}</span><span class="num out-packs" style="font-size:16px;">—</span></div>
+    </div>`;}).join('');
+  materialCardsEl.querySelectorAll('input').forEach(i=>i.addEventListener('input',recalcAll));
+  recalcAll();
+}
+const calcAreaInput=$('calcArea');
+calcAreaInput.addEventListener('input',recalcAll);
+function recalcAll(){
+  let area=Math.max(0,parseFloat(calcAreaInput.value)||0);
+  if(settings.imperial)area=area/M2_TO_FT2;
+  const act=document.querySelector('.saved-chip.active');
+  let perim=0;
+  if(act){const sm=state.savedMeasurements.find(x=>x.id==act.dataset.id); perim=sm?sm.perimeter:0;}
+  else if(area>0)perim=4*Math.sqrt(area);
+  materialCardsEl.querySelectorAll('.card').forEach(card=>{
+    const m=MATERIALS[card.dataset.idx];
+    const cov=parseFloat(card.querySelector('.cov-input').value)||m.cov;
+    const layers=parseFloat(card.querySelector('.layers-input').value)||1;
+    const base=m.perMb?perim:area;
+    let qty=base*cov*layers;
+    if(m.waste)qty*=(1+settings.waste/100);
+    const packs=qty>0?(settings.roundPacks?Math.ceil(qty/m.pack):(qty/m.pack)):0;
+    const u=matUnit(m);
+    card.querySelector('.out-qty').textContent=qty>0?qty.toFixed(1)+' '+u:'—';
+    card.querySelector('.out-packs').textContent=packs>0?(settings.roundPacks?packs:packs.toFixed(1))+' ×':'—';
+  });
+}
+const chipRow=$('chipRow'),chipEmpty=$('chipEmpty');
+function renderChips(){
+  if(!state.savedMeasurements.length){chipRow.innerHTML='';chipEmpty.style.display='block';return;}
+  chipEmpty.style.display='none';
+  chipRow.innerHTML=state.savedMeasurements.map(s=>`<span class="saved-chip" data-id="${s.id}">${s.name} · ${dispArea(s.area).toFixed(2)} ${areaUnit()}</span>`).join('');
+  chipRow.querySelectorAll('.saved-chip').forEach(c=>c.addEventListener('click',()=>{
+    chipRow.querySelectorAll('.saved-chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    const sm=state.savedMeasurements.find(x=>x.id==c.dataset.id);
+    calcAreaInput.value=dispArea(sm.area).toFixed(2); recalcAll();
+  }));
+}
+
+/* ==================== AI ==================== */
+/* ─────────────────────────────────────────────────────────────
+   ADRES API — ZMIEŃ TĘ JEDNĄ LINIĘ przed wysłaniem aplikacji znajomym.
+   Wewnątrz Claude działa domyślny adres. W samodzielnej wersji (APK / strona)
+   wstaw tu adres swojego serwera pośredniczącego, np.:
+   const API_ENDPOINT = "https://metrbudowa-ai.twojlogin.workers.dev";
+   Instrukcja postawienia serwera: plik instrukcja-ai-proxy.md
+   ───────────────────────────────────────────────────────────── */
+const API_ENDPOINT = "https://api.anthropic.com/v1/messages";
+
+/* ─────────────────────────────────────────────────────────────
+   TRYB DEMONSTRACYJNY
+   true  = funkcje AI pokazują gotowy przykładowy wynik (bez kosztów,
+           bez serwera). Tak wysyłasz aplikację do testów.
+   false = aplikacja pyta prawdziwe AI pod adresem API_ENDPOINT.
+   ───────────────────────────────────────────────────────────── */
+const DEMO_MODE = true;
+
+/* Przykładowe odpowiedzi — pokazują, jak wygląda wynik z prawdziwym AI.
+   Liczby są zmyślone i celowo oznaczone w interfejsie jako przykład. */
+const DEMO = {
+ analiza:{
+  pl:'{"waluta":"zł","materialy":[{"nazwa":"Farba lateksowa biała","ilosc":"2 × wiadro 10 l","cenaJedn":"119 zł/wiadro","koszt":238},{"nazwa":"Grunt głęboko penetrujący","ilosc":"1 × kanister 5 l","cenaJedn":"69 zł/szt","koszt":69},{"nazwa":"Gładź szpachlowa","ilosc":"3 × worek 20 kg","cenaJedn":"42 zł/worek","koszt":126},{"nazwa":"Taśma malarska","ilosc":"2 × rolka 50 m","cenaJedn":"14 zł/rolka","koszt":28},{"nazwa":"Folia ochronna","ilosc":"2 × opakowanie","cenaJedn":"18 zł/szt","koszt":36}],"sumaMaterialow":497,"kosztOd":520,"kosztDo":690,"kosztZaM2":"8-10 zł/m²","narzedzia":[{"nazwa":"Wałek 25 cm + kij","cena":85,"tryb":"kup"},{"nazwa":"Drabina malarska","cena":60,"tryb":"wypozycz"},{"nazwa":"Kuweta i mieszadło","cena":0,"tryb":"mam"}],"sumaNarzedzi":145,"produkty":[{"doCzego":"Farba","produkt":"Śnieżka EKO Plus","dlaczego":"dobre krycie, atest higieniczny"},{"doCzego":"Grunt","produkt":"Atlas Uni-Grunt","dlaczego":"standard pod farbę i gładź"},{"doCzego":"Gładź","produkt":"Acryl-Putz Finisz","dlaczego":"łatwa w szlifowaniu"}],"kroki":["Zabezpieczyć podłogę i okna folią","Zmyć ściany i uzupełnić ubytki","Nałożyć gładź, odczekać 24 h","Przeszlifować i odpylić","Zagruntować, schnięcie 4 h","Malować 2 warstwy z przerwą 4 h"],"uwagi":["Nie malować poniżej 10°C","Druga warstwa dopiero po pełnym wyschnięciu"],"zrodla":"przykład poglądowy, ceny orientacyjne"}',
+  en:'{"waluta":"£","materialy":[{"nazwa":"White latex paint","ilosc":"2 × 10 l tub","cenaJedn":"£29/tub","koszt":58},{"nazwa":"Deep primer","ilosc":"1 × 5 l can","cenaJedn":"£17/can","koszt":17},{"nazwa":"Skim coat filler","ilosc":"3 × 20 kg bag","cenaJedn":"£11/bag","koszt":33},{"nazwa":"Masking tape","ilosc":"2 × 50 m roll","cenaJedn":"£4/roll","koszt":8},{"nazwa":"Dust sheets","ilosc":"2 × pack","cenaJedn":"£5/pack","koszt":10}],"sumaMaterialow":126,"kosztOd":130,"kosztDo":175,"kosztZaM2":"£2-3/m²","narzedzia":[{"nazwa":"25 cm roller + pole","cena":22,"tryb":"kup"},{"nazwa":"Step ladder","cena":15,"tryb":"wypozycz"},{"nazwa":"Paint tray","cena":0,"tryb":"mam"}],"sumaNarzedzi":37,"produkty":[{"doCzego":"Paint","produkt":"Dulux EasyCare","dlaczego":"good coverage, washable"},{"doCzego":"Primer","produkt":"Zinsser Gardz","dlaczego":"seals porous surfaces"},{"doCzego":"Filler","produkt":"Toupret Interior","dlaczego":"sands easily"}],"kroki":["Cover floor and windows","Wash walls and fill cracks","Apply filler, leave 24 h","Sand and dust off","Prime, allow 4 h","Two coats, 4 h between"],"uwagi":["Do not paint below 10°C","Second coat only when fully dry"],"zrodla":"illustrative example, indicative prices"}',
+  nl:'{"waluta":"€","materialy":[{"nazwa":"Witte latex muurverf","ilosc":"2 × emmer 10 l","cenaJedn":"€32/emmer","koszt":64},{"nazwa":"Diepteprimer","ilosc":"1 × jerrycan 5 l","cenaJedn":"€19/stuk","koszt":19},{"nazwa":"Fijne plamuur","ilosc":"3 × zak 20 kg","cenaJedn":"€13/zak","koszt":39},{"nazwa":"Afplaktape","ilosc":"2 × rol 50 m","cenaJedn":"€5/rol","koszt":10},{"nazwa":"Afdekfolie","ilosc":"2 × pak","cenaJedn":"€6/pak","koszt":12}],"sumaMaterialow":144,"kosztOd":150,"kosztDo":195,"kosztZaM2":"€2-3/m²","narzedzia":[{"nazwa":"Roller 25 cm + steel","cena":25,"tryb":"kup"},{"nazwa":"Trapladder","cena":18,"tryb":"wypozycz"},{"nazwa":"Verfbak","cena":0,"tryb":"mam"}],"sumaNarzedzi":43,"produkty":[{"doCzego":"Muurverf","produkt":"Histor Perfect Finish","dlaczego":"goede dekking, afwasbaar"},{"doCzego":"Primer","produkt":"Alabastine Voorstrijk","dlaczego":"standaard onder verf"},{"doCzego":"Plamuur","produkt":"Knauf Rotband Finish","dlaczego":"makkelijk te schuren"}],"kroki":["Vloer en ramen afdekken","Wanden reinigen en gaten vullen","Plamuur aanbrengen, 24 u laten drogen","Schuren en stofvrij maken","Primer aanbrengen, 4 u drogen","Twee lagen verf, 4 u ertussen"],"uwagi":["Niet schilderen onder 10°C","Tweede laag pas als eerste droog is"],"zrodla":"voorbeeld ter illustratie, indicatieve prijzen"}'
+ },
+ wycena:{
+  pl:'{"waluta":"zł","materialy":[{"nazwa":"Farba lateksowa","ilosc":"3 × wiadro 10 l","cenaJedn":"119 zł/wiadro","koszt":357},{"nazwa":"Grunt","ilosc":"2 × kanister 5 l","cenaJedn":"69 zł/szt","koszt":138},{"nazwa":"Gładź szpachlowa","ilosc":"5 × worek 20 kg","cenaJedn":"42 zł/worek","koszt":210},{"nazwa":"Materiały pomocnicze","ilosc":"komplet","cenaJedn":"—","koszt":95}],"sumaMaterialow":800,"robocizna":[{"nazwa":"Gładzie 2 warstwy","stawka":"38 zł/m²","koszt":1900},{"nazwa":"Malowanie 2 warstwy","stawka":"22 zł/m²","koszt":1100},{"nazwa":"Przygotowanie i zabezpieczenie","stawka":"ryczałt","koszt":300}],"sumaRobocizny":3300,"narzedzia":[],"sumaNarzedzi":0,"kosztOd":3900,"kosztDo":4600,"kosztZaM2":"78-92 zł/m²","coDecyduje":"Stan podłoża — ściany po starej farbie olejnej wymagają dodatkowego przygotowania, co podnosi koszt o 15-20%.","oszczednosci":["Zakup materiałów samodzielnie, bez marży wykonawcy","Prace w sezonie zimowym, gdy ekipy mają mniej zleceń","Jedna warstwa gładzi, jeśli ściany są w dobrym stanie"],"zrodla":"przykład poglądowy, ceny orientacyjne"}',
+  en:'{"waluta":"£","materialy":[{"nazwa":"Latex paint","ilosc":"3 × 10 l tub","cenaJedn":"£29/tub","koszt":87},{"nazwa":"Primer","ilosc":"2 × 5 l can","cenaJedn":"£17/can","koszt":34},{"nazwa":"Skim coat filler","ilosc":"5 × 20 kg bag","cenaJedn":"£11/bag","koszt":55},{"nazwa":"Sundries","ilosc":"set","cenaJedn":"—","koszt":24}],"sumaMaterialow":200,"robocizna":[{"nazwa":"Skimming, 2 coats","stawka":"£9/m²","koszt":450},{"nazwa":"Painting, 2 coats","stawka":"£5/m²","koszt":250},{"nazwa":"Prep and protection","stawka":"fixed","koszt":70}],"sumaRobocizny":770,"narzedzia":[],"sumaNarzedzi":0,"kosztOd":950,"kosztDo":1150,"kosztZaM2":"£19-23/m²","coDecyduje":"Substrate condition — walls over old oil paint need extra preparation, adding 15-20% to the cost.","oszczednosci":["Buy materials yourself, without the contractor markup","Book in winter when crews have fewer jobs","One coat of filler if walls are already sound"],"zrodla":"illustrative example, indicative prices"}',
+  nl:'{"waluta":"€","materialy":[{"nazwa":"Latex muurverf","ilosc":"3 × emmer 10 l","cenaJedn":"€32/emmer","koszt":96},{"nazwa":"Primer","ilosc":"2 × jerrycan 5 l","cenaJedn":"€19/stuk","koszt":38},{"nazwa":"Fijne plamuur","ilosc":"5 × zak 20 kg","cenaJedn":"€13/zak","koszt":65},{"nazwa":"Hulpmaterialen","ilosc":"set","cenaJedn":"—","koszt":28}],"sumaMaterialow":227,"robocizna":[{"nazwa":"Uitvlakken, 2 lagen","stawka":"€11/m²","koszt":550},{"nazwa":"Schilderen, 2 lagen","stawka":"€6/m²","koszt":300},{"nazwa":"Voorbereiding en afdekken","stawka":"vast","koszt":85}],"sumaRobocizny":935,"narzedzia":[],"sumaNarzedzi":0,"kosztOd":1150,"kosztDo":1400,"kosztZaM2":"€23-28/m²","coDecyduje":"Staat van de ondergrond — wanden met oude verf vragen extra voorbereiding, dat verhoogt de kosten met 15-20%.","oszczednosci":["Materiaal zelf inkopen, zonder opslag van de uitvoerder","In de winter inplannen, dan hebben ploegen minder werk","Eén laag plamuur als de wanden goed zijn"],"zrodla":"voorbeeld ter illustratie, indicatieve prijzen"}'
+ },
+ wykonawcy:{
+  pl:'{"okolica":"przykładowa okolica","wykonawcy":[{"nazwa":"Ekipa remontowa (przykład)","typ":"firma","zakres":"malowanie, gładzie, płytki","gdzie":"centrum","zrodlo":"portal ogłoszeniowy","link":"https://www.google.com/search?q=ekipa+remontowa"},{"nazwa":"Wykończenia wnętrz (przykład)","typ":"freelancer","zakres":"gładzie, malowanie","gdzie":"okolice","zrodlo":"portal ogłoszeniowy","link":"https://www.google.com/search?q=wykonczenia+wnetrz"}],"jakSprawdzic":["Poproś o zdjęcia z ostatnich trzech realizacji","Sprawdź, czy firma ma wpis w CEIDG lub KRS","Ustal na piśmie zakres prac i termin przed rozpoczęciem"],"uwaga":"To jest przykład poglądowy — w pełnej wersji AI wyszukuje prawdziwe ogłoszenia w Twojej okolicy."}',
+  en:'{"okolica":"sample area","wykonawcy":[{"nazwa":"Building crew (example)","typ":"firma","zakres":"painting, plastering, tiling","gdzie":"city centre","zrodlo":"listing portal","link":"https://www.google.com/search?q=building+crew"},{"nazwa":"Interior finishing (example)","typ":"freelancer","zakres":"plastering, painting","gdzie":"surrounding area","zrodlo":"listing portal","link":"https://www.google.com/search?q=interior+finishing"}],"jakSprawdzic":["Ask for photos of their last three jobs","Check they are registered and insured","Agree scope and dates in writing before they start"],"uwaga":"This is an illustrative example — the full version searches real listings in your area."}',
+  nl:'{"okolica":"voorbeeldregio","wykonawcy":[{"nazwa":"Klusbedrijf (voorbeeld)","typ":"firma","zakres":"schilderen, stucwerk, tegels","gdzie":"centrum","zrodlo":"advertentieportaal","link":"https://www.google.com/search?q=klusbedrijf"},{"nazwa":"Afbouw en afwerking (voorbeeld)","typ":"freelancer","zakres":"stucwerk, schilderen","gdzie":"omgeving","zrodlo":"advertentieportaal","link":"https://www.google.com/search?q=afbouwbedrijf"}],"jakSprawdzic":["Vraag foto\u2019s van de laatste drie klussen","Controleer KvK-inschrijving en verzekering","Leg omvang en planning schriftelijk vast"],"uwaga":"Dit is een voorbeeld — de volledige versie zoekt echte advertenties in jouw omgeving."}'
+ },
+ ceny:{
+  pl:'## Ceny\n\n| Produkt | Cena | Gdzie |\n| --- | --- | --- |\n| Farba lateksowa biała 10 l | 99 zł | market budowlany |\n| Farba lateksowa premium 10 l | 149 zł | market budowlany |\n| Farba akrylowa 10 l | 79 zł | hurtownia |\n\n## Co wybrać\n\nŚredni wariant zwykle najlepiej wypada w stosunku jakości do ceny — lepsze krycie oznacza mniej warstw, więc realny koszt bywa niższy niż przy najtańszej farbie.\n\nPrzykład poglądowy — w pełnej wersji ceny są wyszukiwane na żywo w internecie.',
+  en:'## Prices\n\n| Product | Price | Where |\n| --- | --- | --- |\n| White latex paint 10 l | £24 | DIY store |\n| Premium latex paint 10 l | £36 | DIY store |\n| Acrylic paint 10 l | £19 | trade merchant |\n\n## What to pick\n\nThe mid-range option usually offers the best value — better coverage means fewer coats, so the real cost often ends up lower than with the cheapest paint.\n\nIllustrative example — the full version searches live prices on the web.',
+  nl:'## Prijzen\n\n| Product | Prijs | Waar |\n| --- | --- | --- |\n| Witte latex muurverf 10 l | €27 | bouwmarkt |\n| Premium latex 10 l | €39 | bouwmarkt |\n| Acrylverf 10 l | €21 | groothandel |\n\n## Wat te kiezen\n\nDe middelste optie geeft meestal de beste prijs-kwaliteitverhouding — betere dekking betekent minder lagen, dus de werkelijke kosten vallen vaak lager uit dan bij de goedkoopste verf.\n\nVoorbeeld ter illustratie — de volledige versie zoekt live prijzen op internet.'
+ },
+ sklepy:{
+  pl:'## Okolica\n\nPrzykładowa okolica — w pełnej wersji ustalana z Twoich współrzędnych.\n\n## Sklepy\n\n| Sklep | Gdzie | Czym się wyróżnia |\n| --- | --- | --- |\n| Duży market budowlany | przy obwodnicy | szeroki wybór, wypożyczalnia narzędzi |\n| Hurtownia budowlana | strefa przemysłowa | materiały sypkie, transport na budowę |\n| Sklep osiedlowy | centrum | drobnica, szybki dojazd |\n\n## Gdzie po co\n\n- Materiały sypkie i większe ilości — hurtownia, zwykle taniej i z dowozem\n- Chemia, narzędzia, drobnica — market budowlany\n- Brakująca jedna rzecz w trakcie pracy — sklep najbliżej\n\nPrzykład poglądowy.',
+  en:'## Area\n\nSample area — the full version works it out from your coordinates.\n\n## Shops\n\n| Shop | Where | Good for |\n| --- | --- | --- |\n| Large DIY store | ring road | wide range, tool hire |\n| Builders merchant | industrial estate | bulk materials, site delivery |\n| Local hardware shop | town centre | small items, quick trip |\n\n## What to buy where\n\n- Bulk materials and large quantities — builders merchant, usually cheaper with delivery\n- Chemicals, tools, small items — DIY store\n- The one thing you ran out of mid-job — whichever is nearest\n\nIllustrative example.',
+  nl:'## Omgeving\n\nVoorbeeldregio — de volledige versie bepaalt dit uit je coördinaten.\n\n## Winkels\n\n| Winkel | Waar | Goed voor |\n| --- | --- | --- |\n| Grote bouwmarkt | aan de ringweg | breed assortiment, gereedschapsverhuur |\n| Bouwmaterialenhandel | bedrijventerrein | bulkmateriaal, levering op locatie |\n| Buurtwinkel | centrum | kleine spullen, snel halen |\n\n## Wat waar kopen\n\n- Bulkmateriaal en grote hoeveelheden — bouwmaterialenhandel, meestal goedkoper met levering\n- Chemie, gereedschap, kleingoed — bouwmarkt\n- Dat ene ding dat op is tijdens de klus — de dichtstbijzijnde\n\nVoorbeeld ter illustratie.'
+ }
+};
+
+async function callClaude(messages,useSearch,kind){
+  if(DEMO_MODE){
+    // krótka pauza, żeby wskaźnik ładowania był widoczny jak przy prawdziwym zapytaniu
+    await new Promise(r=>setTimeout(r,900));
+    const d=DEMO[kind];
+    if(d) return d[lang]||d.en;
+    throw new Error(lang==='pl'?'tryb demonstracyjny':'demo mode');
+  }
+  const body={model:"claude-sonnet-4-6",max_tokens:1000,messages};
+  if(useSearch&&settings.webSearch)body.tools=[{type:"web_search_20250305",name:"web_search"}];
+  let r;
+  try{
+    r=await fetch(API_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  }catch(err){
+    throw new Error(lang==='pl'?'brak połączenia z serwerem AI':'no connection to the AI server');
+  }
+  if(r.status===429)throw new Error(lang==='pl'?'limit zapytań wyczerpany — spróbuj za chwilę':'rate limit reached — try again shortly');
+  if(r.status===401||r.status===403)throw new Error(lang==='pl'?'serwer AI odrzucił zapytanie (klucz API)':'the AI server rejected the request (API key)');
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||'API error');
+  return (d.content||[]).map(c=>c.type==="text"?c.text:"").filter(Boolean).join("\n");
+}
+function mdToHtml(t){
+  return t.replace(/^#{2,3} (.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g,'<ul>$1</ul>')
+    .replace(/\n{2,}/g,'<br><br>');
+}
+function renderRich(t){
+  const lines=t.split('\n'); let out=[],i=0;
+  while(i<lines.length){
+    const l=lines[i];
+    if(/^\s*\|/.test(l)&&/^\s*\|/.test(lines[i+1]||'')&&/-/.test(lines[i+1]||'')){
+      const head=l.split('|').slice(1,-1).map(s=>s.trim());
+      i+=2; let rows=[];
+      while(i<lines.length&&/^\s*\|/.test(lines[i])){rows.push(lines[i].split('|').slice(1,-1).map(s=>s.trim()));i++;}
+      out.push('<table><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+
+        rows.map(r=>'<tr>'+r.map(c=>'<td>'+c.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</td>').join('')+'</tr>').join('')+'</table>');
+      continue;
+    }
+    out.push(l); i++;
+  }
+  return mdToHtml(out.join('\n'));
+}
+const LANG_NAME={pl:'POLSKU',en:'ENGLISH',nl:'DUTCH'};
+/* Warianty promptów mamy w PL i EN. Dla innych języków bierzemy wariant
+   angielski i nadpisujemy język odpowiedzi. */
+function langRule(){
+  if(lang==='pl'||lang==='en')return '';
+  const names={nl:'DUTCH (Nederlands)'};
+  return `\n\nIMPORTANT: write every string in your reply in ${names[lang]||'ENGLISH'}, not in English. Keep the JSON keys exactly as specified in English.`;
+}
+
+const aiOutput=$('aiOutput');
+$('aiAnalyzeBtn').addEventListener('click',async()=>{
+  const task=$('aiTaskInput').value.trim();
+  const area=$('aiArea').value, std=$('aiStandard').value;
+  if(!task){aiOutput.innerHTML=`<div class="err-box">${T.noTask}</div>`;return;}
+  aiOutput.innerHTML=`<div class="loading-box"><span class="spinner"></span>${T.analyzing}</div>`;
+  const p = lang==='pl' ? `Jesteś doświadczonym kierownikiem budowy. Wyszukaj w internecie AKTUALNE ceny materiałów i przygotuj analizę.
+
+${marketPrompt()}
+
+ZAKRES: ${task}
+POWIERZCHNIA: ${area?area+' m²':'nie podano — załóż typową'}
+STANDARD: ${std}
+ZAPAS NA DOCINKI: ${settings.waste}%
+
+Odpowiedz WYŁĄCZNIE obiektem JSON, bez markdown, bez backticków, bez tekstu przed ani po. Wszystkie teksty PO POLSKU. Struktura:
+
+{
+ "waluta":"zł",
+ "materialy":[{"nazwa":"Farba lateksowa biała","ilosc":"3 × wiadro 10 l","cenaJedn":"110 zł/wiadro","koszt":330}],
+ "sumaMaterialow":330,
+ "kosztOd":300,
+ "kosztDo":420,
+ "kosztZaM2":"14-19 zł/m²",
+ "produkty":[{"doCzego":"Farba","produkt":"Dulux EasyCare","dlaczego":"dobre krycie, zmywalna"}],
+ "narzedzia":[{"nazwa":"Wałek 25 cm + kij","cena":45,"tryb":"kup"},{"nazwa":"Drabina malarska","cena":80,"tryb":"wypozycz"},{"nazwa":"Kuweta","cena":0,"tryb":"mam"}],
+ "sumaNarzedzi":125,
+ "kroki":["Zmyć i odtłuścić ściany","Zagruntować, odczekać 4 h"],
+ "uwagi":["Nie malować poniżej 10°C"],
+ "zrodla":"styczeń 2026, Leroy Merlin i Castorama"
+}
+
+ZASADY (KRYTYCZNE — odpowiedź musi być krótka, inaczej zostanie ucięta):
+- Zacznij od znaku { i skończ na }. Zero tekstu, obliczeń czy komentarzy poza JSON-em.
+- "koszt" to LICZBA (bez waluty, bez zakresu).
+- Limity znaków: "nazwa" 34, "cenaJedn" 16, "dlaczego" 45, "doCzego" 18, każdy krok 60, każda uwaga 55.
+- Maksymalnie: 6 materiałów, 3 produkty, 5 narzędzi, 5 kroków, 2 uwagi.
+- Narzędzia: "cena" to LICZBA (koszt kupna lub wypożyczenia), "tryb" to "kup", "wypozycz" albo "mam". Dla "mam" ustaw "cena":0. "sumaNarzedzi" to suma cen tych, których trzeba kupić lub wypożyczyć.
+- Ceny realne z wyszukiwania. NIE wyceniaj robocizny — tylko materiały.
+- Marki dostępne na wskazanym rynku, dopasowane do standardu "${std}".`
+  : `You are an experienced site manager. Search the web for CURRENT material prices and prepare an analysis.
+
+${marketPrompt()}
+
+SCOPE: ${task}
+AREA: ${area?area+' m²':'not given — assume a typical one'}
+GRADE: ${std}
+WASTE ALLOWANCE: ${settings.waste}%
+
+Reply with a JSON object ONLY — no markdown, no backticks, no text before or after. All strings IN ENGLISH. Structure:
+
+{
+ "waluta":"£",
+ "materialy":[{"nazwa":"White latex paint","ilosc":"3 × 10 l tub","cenaJedn":"£28/tub","koszt":84}],
+ "sumaMaterialow":84,
+ "kosztOd":80,
+ "kosztDo":110,
+ "kosztZaM2":"£4-6/m²",
+ "produkty":[{"doCzego":"Paint","produkt":"Dulux EasyCare","dlaczego":"good coverage, washable"}],
+ "narzedzia":[{"nazwa":"25 cm roller + pole","cena":18,"tryb":"kup"},{"nazwa":"Step ladder","cena":25,"tryb":"wypozycz"},{"nazwa":"Paint tray","cena":0,"tryb":"mam"}],
+ "sumaNarzedzi":43,
+ "kroki":["Wash and degrease the walls","Prime, allow 4 h"],
+ "uwagi":["Do not paint below 10°C"],
+ "zrodla":"January 2026, Screwfix and B&Q"
+}
+
+RULES (CRITICAL — the reply must be short or it will be cut off):
+- Start with { and end with }. No text, working out or comments outside the JSON.
+- "koszt" is a NUMBER (no currency, no range).
+- Character limits: "nazwa" 34, "cenaJedn" 16, "dlaczego" 45, "doCzego" 18, each step 60, each warning 55.
+- Maximum: 6 materials, 3 products, 5 tools, 5 steps, 2 warnings.
+- Tools: "cena" is a NUMBER (purchase or hire cost), "tryb" is "kup", "wypozycz" or "mam". Use "cena":0 for "mam". "sumaNarzedzi" is the total of those that must be bought or hired.
+- Real prices from your search. Do NOT price labour — materials only.
+- Brands available on the stated market, matching the "${std}" grade.`+langRule();
+  try{
+    aiOutput.innerHTML=renderAnalysis(await callClaude([{role:"user",content:p}],true,"analiza"));
+  }catch(e){aiOutput.innerHTML=`<div class="err-box">${T.aiErr(e.message)}</div>`;}
+});
+
+function parseJson(raw){
+  if(!raw)return null;
+  let s=raw.replace(/```json|```/g,'');
+  const a=s.indexOf('{');
+  if(a<0)return null;
+  s=s.slice(a);
+  // 1) normalna próba — od pierwszego { do ostatniego }
+  const b=s.lastIndexOf('}');
+  if(b>0){ try{ return JSON.parse(s.slice(0,b+1)); }catch(e){} }
+  // 2) ratunek dla uciętej odpowiedzi: doklej brakujące nawiasy
+  return repairJson(s);
+}
+function repairJson(s){
+  // utnij ogon do ostatniego miejsca, które może kończyć wartość
+  for(let cut=s.length; cut>50; cut--){
+    const ch=s[cut-1];
+    if(ch!=='}'&&ch!==']'&&ch!=='"'&&!/[0-9]/.test(ch))continue;
+    let t=s.slice(0,cut);
+    // policz otwarte struktury poza stringami
+    let inStr=false, esc=false, stack=[];
+    for(const c of t){
+      if(inStr){ if(esc)esc=false; else if(c==='\\')esc=true; else if(c==='"')inStr=false; continue; }
+      if(c==='"')inStr=true;
+      else if(c==='{'||c==='[')stack.push(c);
+      else if(c==='}'||c===']')stack.pop();
+    }
+    if(inStr)continue;                 // ucięte w środku tekstu — cofnij dalej
+    t=t.replace(/,\s*$/,'');           // wiszący przecinek
+    if(/[:,]\s*$/.test(t))continue;    // ucięte tuż po kluczu
+    const close=stack.reverse().map(c=>c==='{'?'}':']').join('');
+    try{ return JSON.parse(t+close); }catch(e){}
+  }
+  return null;
+}
+function renderAnalysis(raw){
+  const d=parseJson(raw);
+  if(!d)return '<div class="ai-out">'+renderRich(raw)+'</div>';
+  const cur=d.waluta||'zł';
+  const mats=(Array.isArray(d.materialy)?d.materialy:[]).filter(x=>x&&x.nazwa);
+  const sumM=typeof d.sumaMaterialow==='number'?d.sumaMaterialow:mats.reduce((s,x)=>s+(x.koszt||0),0);
+  const sumT=toolsTotal(d,cur);
+  const totalTxt=(typeof d.kosztOd==='number'&&typeof d.kosztDo==='number')
+    ? fmtMoney(d.kosztOd,cur)+' – '+fmtMoney(d.kosztDo,cur) : fmtMoney(sumM+sumT,cur);
+  const list=(arr,cls)=>'<ul class="'+cls+'">'+arr.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+
+  return `<div class="ai-out" style="border-color:var(--line);">
+    <div class="ai-badge" style="margin-bottom:12px;">${T.analysisBadge}</div>${demoBadge()}
+
+    <div class="cost-total">
+      <div class="ct-lbl">${T.ctMatOnly}</div>
+      <div class="ct-val">${totalTxt}</div>
+      ${d.kosztZaM2?`<div class="ct-per">${esc(d.kosztZaM2)}</div>`:''}
+      <div class="ct-split">
+        <div><div class="s-lbl">${T.ctMaterials}</div><div class="s-val" style="color:var(--blueprint);">${fmtMoney(sumM,cur)}</div></div>
+        ${sumT>0?`<div><div class="s-lbl">${T.ctTools}</div><div class="s-val" style="color:var(--warn);">${fmtMoney(sumT,cur)}</div></div>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--concrete);line-height:1.4;margin-top:10px;">${T.costHintLabour}</div>
+    </div>
+
+    ${mats.length?`<div class="cost-sec" style="margin-top:18px;">
+      <h4>${T.secMaterials}</h4>
+      ${mats.map(x=>`<div class="li-row">
+        <div class="li-main"><div class="li-name">${esc(x.nazwa||'')}</div>
+        <div class="li-meta">${esc(x.ilosc||'')}${x.ilosc&&x.cenaJedn?' · '+esc(x.cenaJedn):esc(x.cenaJedn||'')}</div></div>
+        <div class="li-cost">${fmtMoney(x.koszt,cur)}</div></div>`).join('')}
+      <div class="li-sub"><span class="ls-lbl">${T.subMaterials}</span><span class="ls-val">${fmtMoney(sumM,cur)}</span></div>
+    </div>`:''}
+
+    ${(Array.isArray(d.produkty)?d.produkty.filter(x=>x&&x.produkt):[]).length?`<div class="cost-sec">
+      <h4>${T.secProducts}</h4>
+      ${d.produkty.filter(x=>x&&x.produkt).map(x=>`<div class="li-row">
+        <div class="li-main"><div class="li-name">${esc(x.produkt||'')}</div>
+        <div class="li-meta">${esc(x.doCzego||'')}${x.dlaczego?' · '+esc(x.dlaczego):''}</div></div></div>`).join('')}
+    </div>`:''}
+
+    ${toolsSection(d.narzedzia,d.sumaNarzedzi,cur)}
+
+    ${Array.isArray(d.kroki)&&d.kroki.length?`<div class="cost-sec">
+      <h4>${T.secSteps}</h4>
+      <ol class="save-list">${d.kroki.map(s=>'<li>'+esc(s)+'</li>').join('')}</ol></div>`:''}
+
+    ${Array.isArray(d.uwagi)&&d.uwagi.length?`<div class="cost-sec">
+      <h4>${T.secWarn}</h4>${list(d.uwagi,'save-list')}</div>`:''}
+
+    ${d.zrodla?`<div class="src-note">${T.srcPrefix} ${esc(d.zrodla)}</div>`:''}
+    ${demoNote()}
+  </div>`;
+}
+
+const priceOutput=$('priceOutput');
+$('priceSearchBtn').addEventListener('click',async()=>{
+  const q=$('priceQuery').value.trim(), city=$('priceCity').value.trim();
+  if(!q){priceOutput.innerHTML=`<div class="err-box">${T.noQuery}</div>`;return;}
+  priceOutput.innerHTML=`<div class="loading-box"><span class="spinner"></span>${T.priceSearching}</div>`;
+  const p = lang==='pl' ? `Wyszukaj w internecie aktualne ceny dla: "${q}"${city?' w okolicy: '+city:''}.
+
+${marketPrompt()}
+
+Odpowiedz PO POLSKU:
+
+## Ceny
+Tabela: | Produkt | Cena | Gdzie |
+Minimum 3 pozycje, od najtańszej, realne ceny z wyszukiwania.
+
+## Co wybrać
+2-3 zdania: najlepszy stosunek jakości do ceny i dlaczego.
+
+Na końcu jedna linia: kiedy ceny sprawdzono. Bez wstępu.`
+  : `Search the web for current prices for: "${q}"${city?' in the area of: '+city:''}.
+
+${marketPrompt()}
+
+Answer IN ENGLISH:
+
+## Prices
+Table: | Product | Price | Where |
+At least 3 entries, cheapest first, real prices from your search.
+
+## What to pick
+2-3 sentences: best value for money and why.
+
+End with one line stating when the prices were checked. No intro.`+langRule();
+  try{
+    priceOutput.innerHTML='<div class="ai-out"><div class="ai-badge" style="margin-bottom:10px;">'+T.liveBadge+'</div>'+demoBadge()+renderRich(await callClaude([{role:"user",content:p}],true,"ceny"))+demoNote()+'</div>';
+  }catch(e){priceOutput.innerHTML=`<div class="err-box">${T.aiErr(e.message)}</div>`;}
+});
+
+/* ==================== WYCENA ROBÓT ==================== */
+const costOutput=$('costOutput'),costChipRow=$('costChipRow');
+const TRADE_HINT={
+ painting:['malarz','painter','schilder'], skim:['malarz / szpachlarz','plasterer','stukadoor / schilder'], plaster:['tynkarz','plasterer','stukadoor'],
+ wallpaper:['tapeciarz','wallpaper hanger','behanger'], decoplaster:['tynkarz dekoracyjny','specialist plasterer','stukadoor sierpleister'],
+ concrete:['wykończeniowiec','specialist finisher','afbouwspecialist'], slats:['stolarz / montażysta','carpenter','timmerman'],
+ drywall:['montażysta suchej zabudowy','drylining fitter','metalstudmonteur'], drylining:['montażysta suchej zabudowy','drylining fitter','metalstudmonteur'],
+ acoustic:['montażysta suchej zabudowy','insulation fitter','isolatiemonteur'], suspceiling:['montażysta sufitów','ceiling fitter','plafondmonteur'],
+ stretchceiling:['montażysta sufitów napinanych','stretch ceiling fitter','spanplafondmonteur'], coving:['wykończeniowiec','decorator','afbouwspecialist'],
+ floor:['podłogarz','flooring fitter','vloerenlegger'], vinyl:['podłogarz','flooring fitter','vloerenlegger'], parquet:['parkieciarz','floor fitter','parketteur'],
+ carpet:['podłogarz','carpet fitter','vloerenlegger'], sanding:['cykliniarz','floor sander','parketschuurder'], anhydrite:['wylewkarz','screeder','dekvloerlegger'],
+ ufh:['hydraulik / instalator ogrzewania','heating engineer','installateur vloerverwarming'], epoxy:['posadzkarz żywiczny','resin floor specialist','gietvloerspecialist'],
+ skirting:['wykończeniowiec','carpenter','timmerman'],
+ tiles:['glazurnik','tiler','tegelzetter'], bigtiles:['glazurnik','tiler','tegelzetter'], wetroom:['glazurnik','tiler','tegelzetter'],
+ sanitary:['hydraulik','plumber','loodgieter'], plumbing:['hydraulik','plumber','loodgieter'], shower:['hydraulik','plumber','loodgieter'],
+ grouting:['glazurnik','tiler','tegelzetter'], splashback:['glazurnik','tiler','tegelzetter'],
+ electrics:['elektryk','electrician','elektricien'], fuseboard:['elektryk','electrician','elektricien'], lighting:['elektryk','electrician','elektricien'],
+ ventilation:['instalator wentylacji','ventilation engineer','ventilatiemonteur'], radiators:['hydraulik','heating engineer','cv-monteur'],
+ loft:['ekipa wykończeniowa','loft specialist','afbouwbedrijf'], loftinsul:['ocieplacz','insulation installer','isolatiebedrijf'],
+ stairs:['stolarz','joiner','timmerman'],
+ facade:['ekipa elewacyjna','rendering crew','gevelisolatiebedrijf'], render:['tynkarz elewacyjny','renderer','gevelstukadoor'],
+ roof:['dekarz','roofer','dakdekker'], terrace:['glazurnik / hydroizolacje','tiler','tegelzetter / waterdichting'],
+ paving:['brukarz','paving contractor','stratenmaker'], fence:['ekipa ogrodzeniowa','fencing contractor','schuttingbouwer'],
+};
+$('costJob').addEventListener('change',e=>{
+  $('costCustomField').style.display = e.target.value==='custom' ? 'block' : 'none';
+  const h=TRADE_HINT[e.target.value];
+  if(h && !$('proTrade').value.trim()) $('proTrade').value = lang==='pl'?h[0]:(lang==='nl'&&h[2]?h[2]:h[1]);
+});
+function renderCostChips(){
+  if(!state.savedMeasurements.length){costChipRow.innerHTML='';return;}
+  costChipRow.innerHTML='<div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--concrete);width:100%;margin-bottom:6px;">'+T.costUseSaved+'</div>'+
+    state.savedMeasurements.map(s=>`<span class="saved-chip cost-chip" data-a="${s.area}">${s.name} · ${dispArea(s.area).toFixed(2)} ${areaUnit()}</span>`).join('');
+  costChipRow.querySelectorAll('.cost-chip').forEach(c=>c.addEventListener('click',()=>{
+    costChipRow.querySelectorAll('.cost-chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    $('costArea').value=dispArea(parseFloat(c.dataset.a)).toFixed(2);
+  }));
+}
+$('costBtn').addEventListener('click',async()=>{
+  const jobSel=$('costJob'), jobText = jobSel.value==='custom' ? $('costCustom').value.trim() : jobSel.options[jobSel.selectedIndex].text;
+  let area=Math.max(0,parseFloat($('costArea').value)||0);
+  if(settings.imperial&&area)area=area/M2_TO_FT2;
+  const region=$('costRegion').value.trim();
+  const labour=$('costLabour').value;
+  const std=$('aiStandard').value;
+  if(!jobText||!area){costOutput.innerHTML=`<div class="err-box">${T.costNoJob}</div>`;return;}
+  costOutput.innerHTML=`<div class="loading-box"><span class="spinner"></span>${T.costLoading}</div>`;
+
+  const p = lang==='pl' ? `Wyceń remont. Wyszukaj w internecie AKTUALNE ceny materiałów budowlanych.
+
+${marketPrompt()}${region?'\nDOKŁADNIEJ: region '+region+' — uwzględnij lokalne stawki robocizny.':''}
+
+ZAKRES: ${jobText}
+POWIERZCHNIA: ${area.toFixed(1)} m²
+STANDARD MATERIAŁÓW: ${std}
+ZAPAS NA DOCINKI: ${settings.waste}%
+ROBOCIZNA: ${labour==='hire'?'klient zleca fachowcowi':'klient robi sam — pomiń robociznę'}
+
+Odpowiedz WYŁĄCZNIE obiektem JSON, bez markdown, bez backticków, bez żadnego tekstu przed ani po. Wszystkie teksty PO POLSKU. Struktura:
+
+{
+ "waluta":"zł",
+ "materialy":[{"nazwa":"Farba lateksowa biała","ilosc":"3 × wiadro 10 l","cenaJedn":"110 zł/wiadro","koszt":330}],
+ "sumaMaterialow":330,
+ "robocizna":[{"nazwa":"Malowanie 2 warstwy","stawka":"18 zł/m²","koszt":432}],
+ "sumaRobocizny":432,
+ "narzedzia":[{"nazwa":"Wałek 25 cm + kij","cena":45,"tryb":"kup"},{"nazwa":"Drabina","cena":80,"tryb":"wypozycz"}],
+ "sumaNarzedzi":125,
+ "kosztOd":700,
+ "kosztDo":950,
+ "kosztZaM2":"29-40 zł/m²",
+ "coDecyduje":"Jedno zdanie o tym, co najbardziej przesuwa koszt w widełkach.",
+ "oszczednosci":["punkt 1","punkt 2"],
+ "zrodla":"styczeń 2026, Leroy Merlin i Castorama"
+}
+
+ZASADY (KRYTYCZNE — odpowiedź musi być krótka, inaczej zostanie ucięta):
+- Zacznij od znaku { i skończ na }. Zero tekstu, obliczeń czy komentarzy poza JSON-em.
+- "koszt" to LICZBA (bez waluty, bez zakresu, bez spacji) — pojedyncza wartość środkowa.
+- Limity znaków: "nazwa" 34, "cenaJedn" 16, "stawka" 16, "coDecyduje" 110, każda oszczędność 70, "zrodla" 45.
+- Maksymalnie 6 pozycji materiałów, 3 etapy robocizny, 5 narzędzi.
+- Ceny realne z wyszukiwania.
+- Narzędzia: "cena" to LICZBA (kupno lub wypożyczenie), "tryb" to "kup", "wypozycz" albo "mam". Dla "mam" ustaw "cena":0.
+- Jeśli klient zleca fachowcowi: "narzedzia":[] i "sumaNarzedzi":0 (fachowiec ma swoje).
+- Jeśli klient robi sam: "robocizna":[] i "sumaRobocizny":0, ale WYPISZ narzędzia z cenami.
+- "kosztOd"/"kosztDo" mają obejmować materiały + robociznę + narzędzia.`
+  : `Estimate this job. Search the web for CURRENT building material prices.
+
+${marketPrompt()}${region?'\nMORE PRECISELY: region '+region+' — reflect local labour rates.':''}
+
+SCOPE: ${jobText}
+AREA: ${area.toFixed(1)} m²
+MATERIAL GRADE: ${std}
+WASTE ALLOWANCE: ${settings.waste}%
+LABOUR: ${labour==='hire'?'client is hiring a tradesperson':'client is doing it themselves — skip labour'}
+
+Reply with a JSON object ONLY — no markdown, no backticks, no text before or after. All strings IN ENGLISH. Structure:
+
+{
+ "waluta":"£",
+ "materialy":[{"nazwa":"White latex paint","ilosc":"3 × 10 l tub","cenaJedn":"£28/tub","koszt":84}],
+ "sumaMaterialow":84,
+ "robocizna":[{"nazwa":"Painting, 2 coats","stawka":"£6/m²","koszt":144}],
+ "sumaRobocizny":144,
+ "narzedzia":[{"nazwa":"25 cm roller + pole","cena":18,"tryb":"kup"},{"nazwa":"Step ladder","cena":25,"tryb":"wypozycz"}],
+ "sumaNarzedzi":43,
+ "kosztOd":200,
+ "kosztDo":270,
+ "kosztZaM2":"£8-11/m²",
+ "coDecyduje":"One sentence on what moves the cost within the range.",
+ "oszczednosci":["point 1","point 2"],
+ "zrodla":"January 2026, Screwfix and B&Q"
+}
+
+RULES (CRITICAL — the reply must be short or it will be cut off):
+- Start with { and end with }. No text, working out or comments outside the JSON.
+- "koszt" is a NUMBER (no currency, no range, no spaces) — a single mid-point value.
+- Character limits: "nazwa" 34, "cenaJedn" 16, "stawka" 16, "coDecyduje" 110, each saving 70, "zrodla" 45.
+- Maximum 6 material items, 3 labour stages, 5 tools.
+- Real prices from your search.
+- Tools: "cena" is a NUMBER (purchase or hire), "tryb" is "kup", "wypozycz" or "mam". Use "cena":0 for "mam".
+- If hiring a tradesperson: "narzedzia":[] and "sumaNarzedzi":0 (they bring their own).
+- If doing it themselves: "robocizna":[] and "sumaRobocizny":0, but DO list tools with prices.
+- "kosztOd"/"kosztDo" must cover materials + labour + tools.`+langRule();
+  try{
+    const raw=await callClaude([{role:"user",content:p}],true,"wycena");
+    costOutput.innerHTML=renderCost(raw);
+  }catch(e){costOutput.innerHTML=`<div class="err-box">${T.aiErr(e.message)}</div>`;}
+});
+
+function fmtMoney(n,cur){
+  if(typeof n!=='number'||!isFinite(n))return '—';
+  const s=Math.round(n).toLocaleString(lang==='pl'?'pl-PL':'en-GB');
+  return cur==='£'||cur==='$' ? cur+s : s+' '+cur;
+}
+function renderCost(raw){
+  const d=parseJson(raw);
+  if(!d){
+    return '<div class="ai-out"><div class="ai-badge" style="margin-bottom:10px;">'+T.costBadge+'</div>'+renderRich(raw)+'</div>';
+  }
+  const cur=d.waluta||'zł';
+  const mats=(Array.isArray(d.materialy)?d.materialy:[]).filter(x=>x&&x.nazwa);
+  const lab=(Array.isArray(d.robocizna)?d.robocizna:[]).filter(x=>x&&x.nazwa);
+  const sumM=typeof d.sumaMaterialow==='number'?d.sumaMaterialow:mats.reduce((s,x)=>s+(x.koszt||0),0);
+  const sumL=typeof d.sumaRobocizny==='number'?d.sumaRobocizny:lab.reduce((s,x)=>s+(x.koszt||0),0);
+  const sumT=toolsTotal(d,cur);
+  const from=d.kosztOd, to=d.kosztDo;
+  const totalTxt = (typeof from==='number'&&typeof to==='number')
+    ? fmtMoney(from,cur)+' – '+fmtMoney(to,cur)
+    : fmtMoney(sumM+sumL+sumT,cur);
+
+  const row=x=>`<div class="li-row">
+      <div class="li-main"><div class="li-name">${esc(x.nazwa||'')}</div>
+      <div class="li-meta">${esc(x.ilosc||x.stawka||'')}${x.ilosc&&x.cenaJedn?' · '+esc(x.cenaJedn):''}</div></div>
+      <div class="li-cost">${fmtMoney(x.koszt,cur)}</div></div>`;
+
+  return `<div class="ai-out" style="border-color:var(--line);">
+    <div class="ai-badge" style="margin-bottom:12px;">${T.costBadge}</div>${demoBadge()}
+
+    <div class="cost-total">
+      <div class="ct-lbl">${T.ctTotal}</div>
+      <div class="ct-val">${totalTxt}</div>
+      ${d.kosztZaM2?`<div class="ct-per">${esc(d.kosztZaM2)}</div>`:''}
+      <div class="ct-split">
+        <div><div class="s-lbl">${T.ctMaterials}</div><div class="s-val" style="color:var(--blueprint);">${fmtMoney(sumM,cur)}</div></div>
+        ${sumL>0?`<div><div class="s-lbl">${T.ctLabour}</div><div class="s-val" style="color:var(--ok);">${fmtMoney(sumL,cur)}</div></div>`:''}
+        ${sumT>0?`<div><div class="s-lbl">${T.ctTools}</div><div class="s-val" style="color:var(--warn);">${fmtMoney(sumT,cur)}</div></div>`:''}
+      </div>
+    </div>
+
+    ${d.coDecyduje?`<div class="drivers"><strong>${T.drivers}:</strong> ${esc(d.coDecyduje)}</div>`:''}
+
+    ${mats.length?`<div class="cost-sec" style="margin-top:18px;">
+      <h4>${T.secMaterials}</h4>
+      ${mats.map(row).join('')}
+      <div class="li-sub"><span class="ls-lbl">${T.subMaterials}</span><span class="ls-val">${fmtMoney(sumM,cur)}</span></div>
+    </div>`:''}
+
+    ${lab.length?`<div class="cost-sec">
+      <h4>${T.secLabour}</h4>
+      ${lab.map(row).join('')}
+      <div class="li-sub"><span class="ls-lbl">${T.subLabour}</span><span class="ls-val">${fmtMoney(sumL,cur)}</span></div>
+    </div>`:''}
+
+    ${toolsSection(d.narzedzia,d.sumaNarzedzi,cur)}
+
+    ${Array.isArray(d.oszczednosci)&&d.oszczednosci.length?`<div class="cost-sec">
+      <h4>${T.secSave}</h4>
+      <ul class="save-list">${d.oszczednosci.map(s=>'<li>'+esc(s)+'</li>').join('')}</ul>
+    </div>`:''}
+
+    ${d.zrodla?`<div class="src-note">${T.srcPrefix} ${esc(d.zrodla)}</div>`:''}
+    <p style="font-size:11.5px;color:var(--concrete);line-height:1.55;margin:12px 0 0;border-top:1px solid var(--line);padding-top:10px;">${T.costDisclaimer}</p>
+    ${demoNote()}
+  </div>`;
+}
+function demoBadge(){return DEMO_MODE?`<span class="demo-badge">${T.demoBadge}</span>`:'';}
+function demoNote(){return DEMO_MODE?`<div class="demo-note">${T.demoNote}</div>`:'';}
+function esc(s){return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+
+/* wspólny komponent: narzędzia z cenami */
+function toolMode(t){
+  const m=String(t||'').toLowerCase();
+  if(m.startsWith('wypo')||m==='hire'||m==='rent')return {lbl:T.toolRent,col:'var(--warn)'};
+  if(m==='mam'||m==='have'||m==='own')return {lbl:T.toolHave,col:'var(--concrete)'};
+  return {lbl:T.toolBuy,col:'var(--blueprint)'};
+}
+function toolsSection(arr,sum,cur){
+  if(!Array.isArray(arr)||!arr.length)return '';
+  if(typeof arr[0]!=='string')arr=arr.filter(x=>x&&x.nazwa);
+  if(!arr.length)return '';
+  // zgodność wstecz: gdyby AI zwróciło zwykłą listę tekstów
+  if(typeof arr[0]==='string')
+    return `<div class="cost-sec"><h4>${T.secTools}</h4>
+      <ul class="save-list">${arr.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul></div>`;
+  const total=typeof sum==='number'?sum:arr.reduce((s,x)=>s+(x.cena||0),0);
+  return `<div class="cost-sec"><h4>${T.secTools}</h4>
+    ${arr.map(x=>{const m=toolMode(x.tryb);
+      return `<div class="li-row">
+        <div class="li-main"><div class="li-name">${esc(x.nazwa||'')}</div>
+        <div class="li-meta" style="color:${m.col};">${m.lbl}</div></div>
+        <div class="li-cost" style="${(x.cena||0)===0?'color:var(--concrete);':''}">${(x.cena||0)===0?'—':fmtMoney(x.cena,cur)}</div></div>`;}).join('')}
+    ${total>0?`<div class="li-sub"><span class="ls-lbl">${T.subTools}</span><span class="ls-val">${fmtMoney(total,cur)}</span></div>`:''}
+  </div>`;
+}
+function toolsTotal(d,cur){
+  const arr=Array.isArray(d.narzedzia)?d.narzedzia:[];
+  if(!arr.length||typeof arr[0]==='string')return 0;
+  return typeof d.sumaNarzedzi==='number'?d.sumaNarzedzi:arr.reduce((s,x)=>s+(x.cena||0),0);
+}
+
+/* ==================== WYSZUKIWARKA WYKONAWCÓW ==================== */
+const proOutput=$('proOutput');
+$('proBtn').addEventListener('click',async()=>{
+  const trade=$('proTrade').value.trim();
+  const area=$('proArea').value.trim()||$('costRegion').value.trim();
+  if(!trade){proOutput.innerHTML=`<div class="err-box">${T.proNoTrade}</div>`;return;}
+  proOutput.innerHTML=`<div class="loading-box"><span class="spinner"></span>${T.proLoading}</div>`;
+
+  const loc = area ? (lang==='pl'?`OKOLICA: ${area}`:`AREA: ${area}`)
+    : (lastCoords ? (lang==='pl'?`OKOLICA: ustal z współrzędnych ${lastCoords.la}, ${lastCoords.ln}`:`AREA: determine from coordinates ${lastCoords.la}, ${lastCoords.ln}`)
+                  : (lang==='pl'?'OKOLICA: nie podano — poproś o podanie miasta w polu wyżej':'AREA: not given — ask for a city in the field above'));
+
+  const p = lang==='pl' ? `Wyszukaj w internecie fachowców i firmy, którzy PUBLICZNIE ogłaszają usługi.
+
+SZUKANY FACHOWIEC: ${trade}
+${loc}
+${marketPrompt()}
+
+Przeszukaj portale ogłoszeniowe i strony firmowe działające w tym kraju.
+
+Odpowiedz WYŁĄCZNIE obiektem JSON, bez markdown i bez tekstu poza nim. Teksty PO POLSKU:
+
+{
+ "okolica":"Kraków i okolice",
+ "wykonawcy":[{"nazwa":"Nazwa z ogłoszenia","typ":"firma","zakres":"glazura, hydraulika","gdzie":"Kraków-Podgórze","zrodlo":"Oferteo","link":"https://..."}],
+ "jakSprawdzic":["punkt 1","punkt 2"],
+ "uwaga":"Jedno zdanie, jeśli wyników jest mało lub są niepewne."
+}
+
+ZASADY (KRYTYCZNE):
+- Zacznij od { i skończ na }. Zero tekstu poza JSON-em.
+- Maksymalnie 6 wykonawców. "nazwa" 40 znaków, "zakres" 45, "gdzie" 30, "zrodlo" 20.
+- "typ" to "firma" albo "freelancer".
+- "link" to prawdziwy adres ogłoszenia lub strony znaleziony w wyszukiwaniu. Jeśli nie masz pewnego linku, pomiń tego wykonawcę.
+- NIE twórz własnych ocen, gwiazdek ani rankingu. Nie porządkuj według jakości. Nie wymyślaj nazwisk osób prywatnych — podawaj nazwy, pod którymi ogłaszają się publicznie.
+- Jeśli nic nie znajdziesz, zwróć "wykonawcy":[] i wyjaśnij to w "uwaga".
+- "jakSprawdzic": 2-3 krótkie punkty, jak zweryfikować wykonawcę przed zleceniem.`
+  : `Search the web for tradespeople and firms who PUBLICLY advertise their services.
+
+TRADE WANTED: ${trade}
+${loc}
+${marketPrompt()}
+
+Search listing portals and company sites operating in that country.
+
+Reply with a JSON object ONLY, no markdown, no text outside it. Strings IN ENGLISH:
+
+{
+ "okolica":"Manchester and surroundings",
+ "wykonawcy":[{"nazwa":"Name from the listing","typ":"firma","zakres":"tiling, plumbing","gdzie":"Salford","zrodlo":"Checkatrade","link":"https://..."}],
+ "jakSprawdzic":["point 1","point 2"],
+ "uwaga":"One sentence if results are few or uncertain."
+}
+
+RULES (CRITICAL):
+- Start with { and end with }. No text outside the JSON.
+- Max 6 tradespeople. "nazwa" 40 chars, "zakres" 45, "gdzie" 30, "zrodlo" 20.
+- "typ" is "firma" or "freelancer".
+- "link" must be a real listing or site URL found in your search. If you have no reliable link, omit that entry.
+- Do NOT invent ratings, stars or a ranking. Do not order by quality. Do not invent private individuals' names — use the names they advertise under.
+- If you find nothing, return "wykonawcy":[] and explain in "uwaga".
+- "jakSprawdzic": 2-3 short points on how to vet a contractor before hiring.`+langRule();
+  try{
+    proOutput.innerHTML=renderPros(await callClaude([{role:"user",content:p}],true,"wykonawcy"));
+  }catch(e){proOutput.innerHTML=`<div class="err-box">${T.aiErr(e.message)}</div>`;}
+});
+
+function renderPros(raw){
+  const d=parseJson(raw);
+  if(!d)return '<div class="ai-out">'+renderRich(raw)+'</div>';
+  const pros=(Array.isArray(d.wykonawcy)?d.wykonawcy:[]).filter(x=>x&&x.nazwa);
+  const typeLbl=t=>String(t||'').toLowerCase().startsWith('free')?T.proTypeFreelance:T.proTypeFirm;
+  return `<div class="ai-out" style="border-color:var(--line);">
+    <div class="ai-badge" style="margin-bottom:12px;">${T.proBadge}</div>${demoBadge()}
+    ${d.okolica?`<div class="li-meta" style="margin-bottom:12px;font-size:12px;">${esc(d.okolica)}</div>`:''}
+    ${pros.length? pros.map(x=>`<div class="li-row" style="align-items:center;">
+        <div class="li-main">
+          <div class="li-name">${esc(x.nazwa)}</div>
+          <div class="li-meta">${typeLbl(x.typ)}${x.gdzie?' · '+esc(x.gdzie):''}${x.zakres?' · '+esc(x.zakres):''}</div>
+          ${x.link?`<div style="margin-top:5px;"><a href="${esc(x.link)}" target="_blank" rel="noopener" style="color:var(--orange);font-size:12px;text-decoration:none;">${T.proSource}: ${esc(x.zrodlo||'link')} →</a></div>`:''}
+        </div></div>`).join('')
+      : `<div class="empty-note" style="font-style:normal;">${esc(d.uwaga||'')}</div>`}
+    ${d.uwaga&&pros.length?`<div class="drivers" style="margin-top:12px;">${esc(d.uwaga)}</div>`:''}
+    ${Array.isArray(d.jakSprawdzic)&&d.jakSprawdzic.length?`<div class="cost-sec" style="margin-top:16px;">
+      <h4>${T.secSave.replace(/.*/,lang==='pl'?'Jak zweryfikować':'How to vet them')}</h4>
+      <ul class="save-list">${d.jakSprawdzic.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul></div>`:''}
+    <p style="font-size:11.5px;color:var(--concrete);line-height:1.55;margin:14px 0 0;border-top:1px solid var(--line);padding-top:10px;">${T.proNote}</p>
+    ${demoNote()}
+  </div>`;
+}
+
+/* ==================== SKLEPY / GPS ==================== */
+const storeResults=$('storeResults'),locateBtn=$('locateBtn');
+locateBtn.addEventListener('click',()=>{
+  if(!settings.useGps){storeResults.innerHTML=`<div class="err-box">${T.gpsOff}</div>`;return;}
+  if(!navigator.geolocation){noLoc();return;}
+  locateBtn.disabled=true; locateBtn.textContent=T.locating;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const la=pos.coords.latitude.toFixed(4), ln=pos.coords.longitude.toFixed(4);
+    lastCoords={la,ln};
+    detectedMarket=guessMarket(parseFloat(la),parseFloat(ln));
+    updateMarketStatus();
+    locateBtn.textContent=T.analyzingStores;
+    storeResults.innerHTML=`<div class="loading-box"><span class="spinner"></span>${T.storesLoading}</div>`;
+    const q=$('priceQuery').value.trim();
+    const p = lang==='pl' ? `Współrzędne użytkownika: ${la}, ${ln}.
+
+Ustal kraj, miejscowość/dzielnicę i wyszukaj w internecie sklepy budowlane oraz hurtownie w tej okolicy. Podaj sieci działające w TYM kraju.${q?' Użytkownik szuka: "'+q+'".':''}
+
+Odpowiedz PO POLSKU:
+
+## Okolica
+Jedno zdanie: jaka to miejscowość/rejon.
+
+## Sklepy
+Tabela: | Sklep | Gdzie | Czym się wyróżnia |
+3-6 pozycji, duże sieci i lokalne hurtownie. W kolumnie "Gdzie" ulica lub dzielnica.
+
+## Gdzie po co
+3-4 punkty: który typ sklepu do jakich zakupów.
+
+Bez wstępu. Jeśli czegoś nie ustalisz, napisz to wprost zamiast zgadywać.`
+    : `User coordinates: ${la}, ${ln}.
+
+Identify the country and town/district, then search the web for builders merchants and DIY stores in that area. List chains that actually operate in THAT country.${q?' The user is looking for: "'+q+'".':''}
+
+Answer IN ENGLISH:
+
+## Area
+One sentence: which town/district this is.
+
+## Shops
+Table: | Shop | Where | What it is good for |
+3-6 entries, both large chains and local merchants. Put a street or district in "Where".
+
+## What to buy where
+3-4 bullets: which type of shop suits which purchases.
+
+No intro. If you cannot establish something, say so rather than guessing.`+langRule();
+    try{
+      const txt=await callClaude([{role:"user",content:p}],true,"sklepy");
+      storeResults.innerHTML='<div class="ai-out"><div class="ai-badge" style="margin-bottom:10px;">'+T.storesBadge+'</div>'+demoBadge()+renderRich(txt)+demoNote()+
+        `</div><a href="https://www.google.com/maps/search/builders+merchant/@${la},${ln},13z" target="_blank" style="text-decoration:none;">
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;">
+        <div><div style="font-weight:700;font-size:13.5px;">${T.mapLink}</div>
+        <div style="font-size:12px;color:var(--concrete);margin-top:2px;">${T.mapLinkSub}</div></div>
+        <span style="color:var(--orange);font-size:20px;">→</span></div></a>`;
+    }catch(e){
+      storeResults.innerHTML=`<div class="err-box">${T.aiErr(e.message)}</div>`;
+    }
+    locateBtn.disabled=false; locateBtn.textContent=T.refreshArea;
+  },()=>{noLoc(); locateBtn.disabled=false; locateBtn.textContent=T.locateBtn;},{timeout:10000});
+});
+function noLoc(){
+  storeResults.innerHTML=`<div class="err-box">${T.noLoc} <a href="https://www.google.com/maps/search/builders+merchant" target="_blank" style="color:var(--orange);">${T.openMaps}</a></div>`;
+}
+
+/* ==================== START ==================== */
+applyLanguage();
+</script>
+</body>
+</html>
